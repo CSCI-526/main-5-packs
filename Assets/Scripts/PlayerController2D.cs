@@ -46,11 +46,17 @@ public class PlayerController2D : MonoBehaviour
         RaycastHit2D hit = Physics2D.BoxCast(rb.position, col.size * 0.9f, 0f, moveInput, moveAmount.magnitude, wallLayer);
         bool blocked = hit.collider != null;
 
-        if (blocked && abilityController != null && hit.collider.TryGetComponent(out IceWall iceWall))
+        if (blocked && abilityController != null)
         {
-            if (iceWall.TryMelt(abilityController))
+            if (hit.collider.TryGetComponent(out IceWall iceWall))
             {
-                blocked = false;
+                if (iceWall.TryMelt(abilityController))
+                    blocked = false;
+            }
+            else if (hit.collider.TryGetComponent(out WaterPatch waterPatch)) // 👈 new
+            {
+                if (waterPatch.TrySoak(abilityController))
+                    blocked = false;
             }
         }
 
