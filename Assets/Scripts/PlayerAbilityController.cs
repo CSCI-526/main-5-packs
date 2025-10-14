@@ -4,11 +4,13 @@ using UnityEngine;
 public enum IngredientType
 {
     Chili,
-    Butter
+    Butter,
+    Bread
 }
 
 public class PlayerAbilityController : MonoBehaviour
 {
+    private PlayerColorController colorController;
     private sealed class ActiveAbility
     {
         public readonly IngredientType Type;
@@ -40,6 +42,12 @@ public class PlayerAbilityController : MonoBehaviour
 
     private int stickyZoneDepth;
 
+    private void Awake()
+    {
+        colorController = GetComponent<PlayerColorController>();
+    }
+
+
     private void Update()
     {
         if (activeAbilities.Count == 0) return;
@@ -56,13 +64,36 @@ public class PlayerAbilityController : MonoBehaviour
 
         for (int i = 0; i < expiredBuffer.Count; i++)
         {
-            activeAbilities.Remove(expiredBuffer[i]);
+            IngredientType expiredType = expiredBuffer[i];
+            activeAbilities.Remove(expiredType);
+
+            if (expiredType == IngredientType.Butter)
+            {
+                if (!IsInsideStickyZone() && colorController != null)
+                    colorController.StopPowerAnimation(expiredType);
+            }
+            else
+            {
+                if (colorController != null)
+                    colorController.StopPowerAnimation(expiredType);
+            }
+        }
+
+        if (activeAbilities.Count == 0 && colorController != null && !IsInsideStickyZone())
+        {
+            colorController.StopPowerAnimation();
         }
     }
+
 
     public void GrantAbility(IngredientType type, float durationSeconds)
     {
         activeAbilities[type] = new ActiveAbility(type, durationSeconds);
+
+        if (colorController != null)
+        {
+            colorController.PlayPowerAnimation(type);
+        }
     }
 
     public bool ConsumeAbility(IngredientType type)
@@ -70,6 +101,12 @@ public class PlayerAbilityController : MonoBehaviour
         if (!HasAbility(type)) return false;
 
         activeAbilities.Remove(type);
+
+        if (colorController != null)
+        {
+            colorController.StopPowerAnimation(type);
+        }
+
         return true;
     }
 
@@ -81,12 +118,25 @@ public class PlayerAbilityController : MonoBehaviour
     public void EnterStickyZone()
     {
         stickyZoneDepth++;
+         if (HasAbility(IngredientType.Butter) && colorController != null)
+        {
+            colorController.PlayPowerAnimation(IngredientType.Butter);
+        }
     }
 
     public void ExitStickyZone()
     {
         stickyZoneDepth = Mathf.Max(0, stickyZoneDepth - 1);
+
+        if (stickyZoneDepth == 0)
+        {
+            if (!HasAbility(IngredientType.Butter) && colorController != null)
+            {
+                colorController.StopAllPowerAnimationsInstant();
+            }
+        }
     }
+
 
     public float GetMoveSpeedMultiplier()
     {

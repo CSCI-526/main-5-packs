@@ -11,9 +11,11 @@ public class MazeBuilder : MonoBehaviour
     [Header("Ingredient Prefabs")]
     public GameObject chiliPickupPrefab;
     public GameObject butterPickupPrefab;
+    public GameObject breadPickupPrefab;
     [Header("Obstacle Prefabs")]
     public GameObject iceWallPrefab;
     public GameObject stickyZonePrefab;
+    public GameObject waterPatchPrefab;
     [Header("Ability Durations")]
     public float chiliDurationSeconds = 0f;
     public float butterDurationSeconds = 12f;
@@ -22,15 +24,21 @@ public class MazeBuilder : MonoBehaviour
     {
         string[] maze =
         {
-            "####################",
-            "#..C..#..I.....C..##",
-            "#.#.#.#.###.##.#..##",
-            "#..#..~~~..#.#I..#.#",
-            "#..#B..#..##.~.##..#",
-            "#...#..#....##...###",
-            "#..##..#..B.#..#..##",
-            "#S..#......#..#...##",
-            "####################"
+            "##########################",
+            "#....................R.###",
+            "#..###.....#.~~~~#..#..###",
+            "#....#..#..#.~~~~#..#.W###",
+            "#...I...#..#.............#",
+            "#C.#.#..#..#..B...#...####",
+            "#..#.#..#..#......#...#..#",
+            "#..#.#..#..######I#...#..#",
+            "#..#.#.B.......#....#....#",
+            "#..#..~~~#.....#.C..#..#.#",
+            "#..#..~~~#...###....#..#.#",
+            "#..#.....R.....W.......#.#",
+            "#..######..#...####..###.#",
+            "#S......#..###.......#...#",
+            "##########################"
         };
 
         BuildMaze(maze);
@@ -72,6 +80,16 @@ public class MazeBuilder : MonoBehaviour
                         SpawnIceWall(pos);
                         break;
 
+                    case 'W':
+                        SpawnFloor(pos);
+                        SpawnWaterPatch(pos);
+                        break;
+
+                    case 'R': 
+                        SpawnFloor(pos);
+                        SpawnIngredient(pos, IngredientType.Bread, 0f);
+                        break;
+
                     case '~':
                         SpawnFloor(pos);
                         SpawnStickyZone(pos);
@@ -103,9 +121,30 @@ public class MazeBuilder : MonoBehaviour
 
     void SpawnIngredient(Vector2 position, IngredientType type, float durationSeconds)
     {
-        GameObject prefab = type == IngredientType.Chili ? chiliPickupPrefab : butterPickupPrefab;
-        GameObject ingredient = prefab != null ? Instantiate(prefab, position, Quaternion.identity, transform) : CreateRuntimeIngredient(type, position);
+        GameObject prefab = null;
 
+        // Choose correct prefab based on ingredient type
+        switch (type)
+        {
+            case IngredientType.Chili:
+                prefab = chiliPickupPrefab;
+                break;
+
+            case IngredientType.Butter:
+                prefab = butterPickupPrefab;
+                break;
+
+            case IngredientType.Bread:
+                prefab = breadPickupPrefab;
+                break;
+        }
+
+        // Spawn prefab or create fallback
+        GameObject ingredient = prefab != null
+            ? Instantiate(prefab, position, Quaternion.identity, transform)
+            : CreateRuntimeIngredient(type, position);
+
+        // Attach IngredientPickup if not present
         if (!ingredient.TryGetComponent(out IngredientPickup pickup))
         {
             pickup = ingredient.AddComponent<IngredientPickup>();
@@ -113,6 +152,28 @@ public class MazeBuilder : MonoBehaviour
 
         pickup.Configure(type, durationSeconds);
     }
+
+
+    void SpawnWaterPatch(Vector2 position)
+    {
+        GameObject source = waterPatchPrefab != null ? waterPatchPrefab : wallPrefab;
+        if (source == null) return;
+
+        GameObject water = Instantiate(source, position, Quaternion.identity, transform);
+
+        if (water.TryGetComponent(out SpriteRenderer sr))
+        {
+            sr.color = new Color(0.4f, 0.6f, 1f, 0.75f);
+        }
+
+        if (!water.TryGetComponent(out WaterPatch wp))
+        {
+            wp = water.AddComponent<WaterPatch>();
+        }
+
+        water.layer = LayerMask.NameToLayer("Wall");
+    }
+
 
     GameObject CreateRuntimeIngredient(IngredientType type, Vector2 position)
     {
