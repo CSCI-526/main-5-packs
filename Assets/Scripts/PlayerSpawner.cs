@@ -3,8 +3,6 @@ using UnityEngine;
 public class PlayerSpawner : MonoBehaviour
 {
     public GameObject playerPrefab;
-    // public Transform spawnPoint;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
       GameObject spawnMarker = GameObject.Find("PlayerSpawn");
@@ -19,7 +17,6 @@ public class PlayerSpawner : MonoBehaviour
     }
 
 
-    // Update is called once per frame
     void Update()
     {
         
