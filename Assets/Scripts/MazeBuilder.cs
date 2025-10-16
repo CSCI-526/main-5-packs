@@ -20,6 +20,9 @@ public class MazeBuilder : MonoBehaviour
     public float chiliDurationSeconds = 0f;
     public float butterDurationSeconds = 12f;
 
+    [Header("Dependencies")]
+    public GameManager gameManager;
+
     void Start()
     {
         string[] maze =
@@ -41,7 +44,17 @@ public class MazeBuilder : MonoBehaviour
             "##########################"
         };
 
+        // 1. Build the entire maze. We don't need its return value anymore.
         BuildMaze(maze);
+        
+        // 2. Search the scene for all objects with the "Ingredient" tag and get the count.
+        int ingredientCount = GameObject.FindGameObjectsWithTag("Ingredient").Length;
+
+        // 3. Notify the GameManager.
+        if (gameManager != null)
+        {
+            gameManager.StartLevel(ingredientCount);
+        }
     }
 
     void BuildMaze(string[] layout)
@@ -143,6 +156,9 @@ public class MazeBuilder : MonoBehaviour
         GameObject ingredient = prefab != null
             ? Instantiate(prefab, position, Quaternion.identity, transform)
             : CreateRuntimeIngredient(type, position);
+
+        // Add tag to ingredient
+        ingredient.tag = "Ingredient";
 
         // Attach IngredientPickup if not present
         if (!ingredient.TryGetComponent(out IngredientPickup pickup))
