@@ -18,6 +18,9 @@ public class GameManagerTutorial : MonoBehaviour
     private bool waterCleared = false;
     private bool finalChiliCollected = false;
 
+    private int totalIngredients = 0;
+    private int collectedIngredients = 0;
+
     private string[] tutorialSteps = {
         "Use W, A, S, D or Arrow keys to move!",
         "Now collect the CHILI to melt ice walls",
@@ -34,9 +37,12 @@ public class GameManagerTutorial : MonoBehaviour
     {
         Time.timeScale = 1f;
         endPanel.SetActive(false);
-        ShowStep();
 
-        StartCoroutine(AutoAdvanceAfterDelay(5f));
+        totalIngredients = GameObject.FindGameObjectsWithTag("Ingredient").Length;
+        collectedIngredients = 0;
+
+        ShowStep();
+        StartCoroutine(AutoAdvanceAfterDelay(5f)); 
     }
 
     private IEnumerator AutoAdvanceAfterDelay(float delay)
@@ -55,6 +61,8 @@ public class GameManagerTutorial : MonoBehaviour
 
     public void OnChiliCollected()
     {
+        collectedIngredients++;
+
         if (!chiliCollected && step == 1)
         {
             chiliCollected = true;
@@ -68,6 +76,8 @@ public class GameManagerTutorial : MonoBehaviour
             ShowStep();
             EndTutorial();
         }
+
+        CheckForTutorialCompletion();
     }
 
     public void OnIceWallMelted()
@@ -82,12 +92,16 @@ public class GameManagerTutorial : MonoBehaviour
 
     public void OnButterCollected()
     {
+        collectedIngredients++;
+
         if (!butterCollected && step == 3)
         {
             butterCollected = true;
             step = 4;
             ShowStep();
         }
+
+        CheckForTutorialCompletion();
     }
 
     public void OnStickyZonePassed()
@@ -102,12 +116,16 @@ public class GameManagerTutorial : MonoBehaviour
 
     public void OnBreadCollected()
     {
+        collectedIngredients++;
+
         if (!breadCollected && step == 5)
         {
             breadCollected = true;
             step = 6;
             ShowStep();
         }
+
+        CheckForTutorialCompletion();
     }
 
     public void OnWaterPatchCleared()
@@ -120,11 +138,24 @@ public class GameManagerTutorial : MonoBehaviour
         }
     }
 
+
+    private void CheckForTutorialCompletion()
+    {
+        if (collectedIngredients >= totalIngredients && !finalChiliCollected)
+        {
+            finalChiliCollected = true;
+            step = 8;
+            ShowStep();
+            EndTutorial();
+        }
+    }
+
     private void EndTutorial()
     {
         endPanel.SetActive(true);
         instructionText.text = tutorialSteps[8];
         Time.timeScale = 0f;
+        Debug.Log("Tutorial completed — all ingredients collected!");
     }
 
     public void RetryTutorial()
