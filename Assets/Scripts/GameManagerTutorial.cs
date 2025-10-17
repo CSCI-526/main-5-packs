@@ -10,13 +10,13 @@ public class GameManagerTutorial : MonoBehaviour
     public GameObject endPanel;
 
     private int step = 0;
+
     private bool chiliCollected = false;
     private bool iceMelted = false;
     private bool butterCollected = false;
     private bool stickyPassed = false;
     private bool breadCollected = false;
     private bool waterCleared = false;
-    private bool finalChiliCollected = false;
 
     private int totalIngredients = 0;
     private int collectedIngredients = 0;
@@ -29,8 +29,7 @@ public class GameManagerTutorial : MonoBehaviour
         "Now glide through the sticky floor to continue!",
         "Great! Grab the BREAD to absorb water",
         "Use the BREAD to absorb the water patches",
-        "Perfect! Collect the FINAL CHILI to complete the tutorial",
-        "Tutorial Complete! You're ready to play the real game!"
+        "Perfect! Tutorial Complete — You're ready to play the real game!"
     };
 
     void Start()
@@ -42,7 +41,8 @@ public class GameManagerTutorial : MonoBehaviour
         collectedIngredients = 0;
 
         ShowStep();
-        StartCoroutine(AutoAdvanceAfterDelay(5f)); 
+
+        StartCoroutine(AutoAdvanceAfterDelay(2f));
     }
 
     private IEnumerator AutoAdvanceAfterDelay(float delay)
@@ -50,31 +50,26 @@ public class GameManagerTutorial : MonoBehaviour
         yield return new WaitForSeconds(delay);
         if (step == 0)
         {
-            NextStep(); 
+            NextStep();
         }
     }
 
     private void ShowStep()
     {
-        instructionText.text = tutorialSteps[step];
+        instructionText.text = tutorialSteps[Mathf.Clamp(step, 0, tutorialSteps.Length - 1)];
     }
+
 
     public void OnChiliCollected()
     {
+        StopAllCoroutines();
         collectedIngredients++;
 
-        if (!chiliCollected && step == 1)
+        if (!chiliCollected)
         {
             chiliCollected = true;
-            step = 2;
+            step = Mathf.Max(step, 2);
             ShowStep();
-        }
-        else if (iceMelted && butterCollected && stickyPassed && breadCollected && waterCleared && !finalChiliCollected)
-        {
-            finalChiliCollected = true;
-            step = 8;
-            ShowStep();
-            EndTutorial();
         }
 
         CheckForTutorialCompletion();
@@ -82,10 +77,10 @@ public class GameManagerTutorial : MonoBehaviour
 
     public void OnIceWallMelted()
     {
-        if (!iceMelted && step == 2)
+        if (!iceMelted)
         {
             iceMelted = true;
-            step = 3;
+            step = Mathf.Max(step, 3);
             ShowStep();
         }
     }
@@ -94,10 +89,10 @@ public class GameManagerTutorial : MonoBehaviour
     {
         collectedIngredients++;
 
-        if (!butterCollected && step == 3)
+        if (!butterCollected)
         {
             butterCollected = true;
-            step = 4;
+            step = Mathf.Max(step, 4);
             ShowStep();
         }
 
@@ -106,10 +101,10 @@ public class GameManagerTutorial : MonoBehaviour
 
     public void OnStickyZonePassed()
     {
-        if (!stickyPassed && step == 4)
+        if (!stickyPassed)
         {
             stickyPassed = true;
-            step = 5;
+            step = Mathf.Max(step, 5);
             ShowStep();
         }
     }
@@ -118,10 +113,10 @@ public class GameManagerTutorial : MonoBehaviour
     {
         collectedIngredients++;
 
-        if (!breadCollected && step == 5)
+        if (!breadCollected)
         {
             breadCollected = true;
-            step = 6;
+            step = Mathf.Max(step, 6);
             ShowStep();
         }
 
@@ -130,32 +125,30 @@ public class GameManagerTutorial : MonoBehaviour
 
     public void OnWaterPatchCleared()
     {
-        if (!waterCleared && step == 6)
+        if (!waterCleared)
         {
             waterCleared = true;
-            step = 7;
+            step = Mathf.Max(step, 7);
             ShowStep();
         }
     }
 
-
     private void CheckForTutorialCompletion()
     {
-        if (collectedIngredients >= totalIngredients && !finalChiliCollected)
+        if (collectedIngredients >= totalIngredients)
         {
-            finalChiliCollected = true;
-            step = 8;
-            ShowStep();
             EndTutorial();
         }
     }
 
     private void EndTutorial()
     {
+        if (endPanel.activeSelf) return; 
+
         endPanel.SetActive(true);
-        instructionText.text = tutorialSteps[8];
+        instructionText.text = tutorialSteps[tutorialSteps.Length - 1];
         Time.timeScale = 0f;
-        Debug.Log("Tutorial completed — all ingredients collected!");
+        Debug.Log("🎉 Tutorial completed — all ingredients collected!");
     }
 
     public void RetryTutorial()

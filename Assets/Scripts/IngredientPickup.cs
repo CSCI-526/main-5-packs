@@ -8,7 +8,7 @@ public class IngredientPickup : MonoBehaviour
 
     private bool isCollected;
     private GameManager gameManager;
-    private GameManagerTutorial tutorialManager; // cache both once
+    private GameManagerTutorial tutorialManager;
 
     private void Awake()
     {

@@ -33,12 +33,10 @@ public class WaterPatch : MonoBehaviour
         {
             Instantiate(soakEffect, transform.position, Quaternion.identity);
         }
-        //tutorial
                 if (tutorialManager != null)
         {
             tutorialManager.OnWaterPatchCleared();
         }
-        //ends
         Destroy(gameObject);
     }
 }

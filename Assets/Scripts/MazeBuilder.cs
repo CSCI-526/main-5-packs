@@ -200,20 +200,33 @@ public class MazeBuilder : MonoBehaviour
         SpriteRenderer sr = ingredient.AddComponent<SpriteRenderer>();
         sr.sortingOrder = 1;
 
-        if (floorPrefab != null && floorPrefab.TryGetComponent(out SpriteRenderer floorSR))
+        Sprite customSprite = IngredientVisualFactory.GetSprite(type);
+        if (customSprite != null)
+        {
+            sr.sprite = customSprite;
+            sr.color = Color.white;
+        }
+        else if (floorPrefab != null && floorPrefab.TryGetComponent(out SpriteRenderer floorSR))
         {
             sr.sprite = floorSR.sprite;
+            sr.color = type == IngredientType.Chili
+                ? new Color(0.88f, 0.24f, 0.16f, 1f)
+                : new Color(0.99f, 0.91f, 0.47f, 1f);
         }
 
-        sr.color = type == IngredientType.Chili
-            ? new Color(0.88f, 0.24f, 0.16f, 1f)
-            : new Color(0.99f, 0.91f, 0.47f, 1f);
-
         float pickupScale = Mathf.Max(0.1f, cellSize * 0.6f);
-        ingredient.transform.localScale = new Vector3(pickupScale, pickupScale, 1f);
+        Vector3 targetScale = IngredientVisualFactory.GetScale(type, pickupScale);
+        ingredient.transform.localScale = targetScale;
 
         CircleCollider2D circleCollider = ingredient.AddComponent<CircleCollider2D>();
         circleCollider.isTrigger = true;
+        float maxScale = Mathf.Max(targetScale.x, targetScale.y);
+        float minScale = Mathf.Min(targetScale.x, targetScale.y);
+        if (maxScale > 0f)
+        {
+            float desiredWorldRadius = minScale * 0.5f;
+            circleCollider.radius = desiredWorldRadius / maxScale;
+        }
 
         return ingredient;
     }

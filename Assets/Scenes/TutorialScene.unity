@@ -1759,6 +1759,7 @@ GameObject:
   - component: {fileID: 1675867337}
   - component: {fileID: 1675867339}
   - component: {fileID: 1675867338}
+  - component: {fileID: 2100000000}
   m_Layer: 5
   m_Name: ButterIcon
   m_TagString: Untagged
@@ -1815,6 +1816,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &2100000000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1675867336}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b9c8456236ff4a3097f4d5f1d6edd55, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ingredientType: 1
+  targetImage: {fileID: 1675867338}
+  maxDimension: 70
 --- !u!222 &1675867339
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1834,6 +1850,7 @@ GameObject:
   - component: {fileID: 1796426925}
   - component: {fileID: 1796426927}
   - component: {fileID: 1796426926}
+  - component: {fileID: 2100000001}
   m_Layer: 5
   m_Name: ChiliIcon
   m_TagString: Untagged
@@ -1890,6 +1907,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &2100000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1796426924}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b9c8456236ff4a3097f4d5f1d6edd55, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ingredientType: 0
+  targetImage: {fileID: 1796426926}
+  maxDimension: 70
 --- !u!222 &1796426927
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2045,6 +2077,7 @@ GameObject:
   - component: {fileID: 1856148654}
   - component: {fileID: 1856148656}
   - component: {fileID: 1856148655}
+  - component: {fileID: 2100000002}
   m_Layer: 5
   m_Name: BreadIcon
   m_TagString: Untagged
@@ -2101,6 +2134,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &2100000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1856148653}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b9c8456236ff4a3097f4d5f1d6edd55, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ingredientType: 2
+  targetImage: {fileID: 1856148655}
+  maxDimension: 70
 --- !u!222 &1856148656
 CanvasRenderer:
   m_ObjectHideFlags: 0

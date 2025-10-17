@@ -4,14 +4,13 @@ using UnityEngine.SceneManagement;
 public class GameManager : MonoBehaviour
 {
     [Header("Prefab to Spawn")]
-    public GameObject uiPrefab; // The UI prefab will be assigned here in the inspector
+    public GameObject uiPrefab;
 
     [Header("UI Sprites")]
     public Sprite starFullSprite;
     public Sprite starEmptySprite;
 
-    // --- Private Variables ---
-    private UICanvas uiCanvas; // A reference to the spawned UI's controller script
+    private UICanvas uiCanvas;
 
     private float timeLimit = 120f;
     private float currentTime;
@@ -21,7 +20,6 @@ public class GameManager : MonoBehaviour
 
     void Awake()
     {
-        // Awake's job is now just to find the UI.
         Time.timeScale = 1f;
         if (uiPrefab != null)
         {
@@ -34,14 +32,12 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        // Add listeners to the restart buttons
         foreach (var button in uiCanvas.restartButtons)
         {
             button.onClick.AddListener(RestartGame);
         }
     }
 
-    // This is the new public method that MazeBuilder will call.
     public void StartLevel(int totalIngredientCount)
     {
         totalIngredients = totalIngredientCount;
@@ -50,7 +46,6 @@ public class GameManager : MonoBehaviour
 
         uiCanvas.timerText.gameObject.SetActive(true);
         
-        // Deactivate panels at the start
         uiCanvas.gameWonPanel.SetActive(false);
         uiCanvas.gameOverPanel.SetActive(false);
 
@@ -80,7 +75,6 @@ public class GameManager : MonoBehaviour
         currentTime = timeLimit;
         isGameActive = true;
         
-        // Deactivate panels at the start
         uiCanvas.gameWonPanel.SetActive(false);
         uiCanvas.gameOverPanel.SetActive(false);
 
@@ -102,9 +96,7 @@ public class GameManager : MonoBehaviour
         }
     }
     
-    // --- The rest of the logic is the same, but uses the uiCanvas reference ---
 
-    // Replace your old WinGame() method with this new one
     private void WinGame()
     {
         isGameActive = false;
@@ -114,25 +106,20 @@ public class GameManager : MonoBehaviour
         float timeTaken = timeLimit - currentTime;
         int starsEarned = CalculateStars(timeTaken);
 
-        // Check if the sprite variables have been assigned in the Inspector
         if (starFullSprite == null || starEmptySprite == null)
         {
             Debug.LogError("Star sprites have not been assigned in the GameManager's Inspector!");
-            return; // Exit the function to prevent errors
+            return;
         }
 
-        // Loop through each Image component in the stars array
         for (int i = 0; i < uiCanvas.stars.Length; i++)
         {
-            // If the current star's index is less than the number of stars earned...
             if (i < starsEarned)
             {
-                // ...set its sprite to the full star.
                 uiCanvas.stars[i].sprite = starFullSprite;
             }
             else
             {
-                // ...otherwise, set it to the empty star.
                 uiCanvas.stars[i].sprite = starEmptySprite;
             }
         }
@@ -145,17 +132,13 @@ public class GameManager : MonoBehaviour
         uiCanvas.gameOverPanel.SetActive(true);
     }
     
-    // In GameManager.cs
     private void UpdateTimerUI()
     {
-        // Calculate minutes and seconds as before
         int minutes = Mathf.FloorToInt(currentTime / 60);
         int seconds = Mathf.FloorToInt(currentTime % 60);
 
-        // NEW: Calculate milliseconds (hundredths of a second)
         int milliseconds = Mathf.FloorToInt((currentTime * 100) % 100);
 
-        // Update the text format to include milliseconds
         uiCanvas.timerText.text = string.Format("Time left: {0:00}:{1:00}:{2:00}", minutes, seconds, milliseconds);
     }
     
