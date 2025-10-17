@@ -13,7 +13,7 @@ public class GameManager : MonoBehaviour
     // --- Private Variables ---
     private UICanvas uiCanvas; // A reference to the spawned UI's controller script
 
-    private float timeLimit = 300f;
+    private float timeLimit = 120f;
     private float currentTime;
     private int totalIngredients;
     private int ingredientsEaten = 0;
@@ -22,6 +22,7 @@ public class GameManager : MonoBehaviour
     void Awake()
     {
         // Awake's job is now just to find the UI.
+        Time.timeScale = 1f;
         if (uiPrefab != null)
         {
             GameObject uiInstance = Instantiate(uiPrefab);
@@ -166,10 +167,10 @@ public class GameManager : MonoBehaviour
 
     private int CalculateStars(float time)
     {
-        if (time <= 120) return 5;
-        if (time <= 180) return 4;
-        if (time <= 240) return 3;
-        if (time <= 270) return 2;
+        if (time <= 24f) return 5;
+        if (time <= 48f) return 4;
+        if (time <= 72f) return 3;
+        if (time <= 96f) return 2;
         return 1;
     }
 }

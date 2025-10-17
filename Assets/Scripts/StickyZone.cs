@@ -3,9 +3,15 @@ using UnityEngine;
 [RequireComponent(typeof(BoxCollider2D))]
 public class StickyZone : MonoBehaviour
 {
+    private GameManagerTutorial tutorialManager;
     private void Awake()
     {
         ConfigureCollider();
+    }
+
+    private void Start()
+    {
+        tutorialManager = FindAnyObjectByType<GameManagerTutorial>();
     }
 
     private void Reset()
@@ -30,5 +36,12 @@ public class StickyZone : MonoBehaviour
     {
         if (!other.TryGetComponent(out PlayerAbilityController abilityController)) return;
         abilityController.ExitStickyZone();
+        //tutorial thing
+        GameManagerTutorial tutorialManager = Object.FindFirstObjectByType<GameManagerTutorial>();
+        if (tutorialManager != null)
+        {
+            tutorialManager.OnStickyZonePassed();
+        }
+        //ends
     }
 }

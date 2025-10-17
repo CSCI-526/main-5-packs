@@ -5,12 +5,16 @@ public class WaterPatch : MonoBehaviour
 {
     [SerializeField] private ParticleSystem soakEffect;
     private bool soaked;
-
+    private GameManagerTutorial tutorialManager;
     private void Awake()
     {
         BoxCollider2D col = GetComponent<BoxCollider2D>();
         col.isTrigger = false;
         gameObject.layer = LayerMask.NameToLayer("Wall");
+    }
+    private void Start()
+    {
+        tutorialManager = FindAnyObjectByType<GameManagerTutorial>();
     }
 
     public bool TrySoak(PlayerAbilityController abilityController)
@@ -29,6 +33,12 @@ public class WaterPatch : MonoBehaviour
         {
             Instantiate(soakEffect, transform.position, Quaternion.identity);
         }
+        //tutorial
+                if (tutorialManager != null)
+        {
+            tutorialManager.OnWaterPatchCleared();
+        }
+        //ends
         Destroy(gameObject);
     }
 }
