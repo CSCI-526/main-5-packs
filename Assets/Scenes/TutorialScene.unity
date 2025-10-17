@@ -1816,21 +1816,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &2100000000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1675867336}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b9c8456236ff4a3097f4d5f1d6edd55, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ingredientType: 1
-  targetImage: {fileID: 1675867338}
-  maxDimension: 70
 --- !u!222 &1675867339
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1875,7 +1860,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 70, y: 70}
+  m_SizeDelta: {x: 70, y: 50.000004}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1796426926
 MonoBehaviour:
@@ -1907,21 +1892,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &2100000001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1796426924}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b9c8456236ff4a3097f4d5f1d6edd55, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ingredientType: 0
-  targetImage: {fileID: 1796426926}
-  maxDimension: 70
 --- !u!222 &1796426927
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1987,7 +1957,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Procced
+  m_text: Proceed
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -2102,7 +2072,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 70, y: 70}
+  m_SizeDelta: {x: 70, y: 60.000004}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1856148655
 MonoBehaviour:
@@ -2134,21 +2104,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &2100000002
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1856148653}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b9c8456236ff4a3097f4d5f1d6edd55, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ingredientType: 2
-  targetImage: {fileID: 1856148655}
-  maxDimension: 70
 --- !u!222 &1856148656
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2504,6 +2459,51 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2074697636}
   m_CullTransparentMesh: 1
+--- !u!114 &2100000000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1675867336}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b9c8456236ff4a3097f4d5f1d6edd55, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ingredientType: 1
+  targetImage: {fileID: 1675867338}
+  maxDimension: 70
+--- !u!114 &2100000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1796426924}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b9c8456236ff4a3097f4d5f1d6edd55, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ingredientType: 0
+  targetImage: {fileID: 1796426926}
+  maxDimension: 70
+--- !u!114 &2100000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1856148653}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b9c8456236ff4a3097f4d5f1d6edd55, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ingredientType: 2
+  targetImage: {fileID: 1856148655}
+  maxDimension: 70
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
