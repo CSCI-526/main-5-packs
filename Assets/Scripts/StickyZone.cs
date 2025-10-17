@@ -36,12 +36,10 @@ public class StickyZone : MonoBehaviour
     {
         if (!other.TryGetComponent(out PlayerAbilityController abilityController)) return;
         abilityController.ExitStickyZone();
-        //tutorial thing
         GameManagerTutorial tutorialManager = Object.FindFirstObjectByType<GameManagerTutorial>();
         if (tutorialManager != null)
         {
             tutorialManager.OnStickyZonePassed();
         }
-        //ends
     }
 }

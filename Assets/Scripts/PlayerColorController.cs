@@ -9,7 +9,6 @@ public class PlayerColorController : MonoBehaviour
     private Color baseColor;
     private Coroutine activePulse;
 
-    // Store all active colors currently active
     private readonly List<Color> activeColors = new();
 
     private void Awake()
@@ -18,18 +17,15 @@ public class PlayerColorController : MonoBehaviour
         baseColor = spriteRenderer.color;
     }
 
-    // Called when a power-up is granted
     public void PlayPowerAnimation(IngredientType type)
     {
         Color powerColor = GetPowerColor(type);
 
-        // Add if not already present
         if (!activeColors.Contains(powerColor))
         {
             activeColors.Add(powerColor);
         }
 
-        // Stop any existing coroutine before starting new
         if (activePulse != null)
         {
             StopCoroutine(activePulse);
@@ -40,14 +36,12 @@ public class PlayerColorController : MonoBehaviour
 
     public void StopPowerAnimation(IngredientType? type = null)
     {
-        // If a specific power type ended, remove its color
         if (type != null)
         {
             Color c = GetPowerColor(type.Value);
             activeColors.Remove(c);
         }
 
-        // If no powers left, stop animation and reset
         if (activeColors.Count == 0)
         {
             if (activePulse != null)
@@ -68,7 +62,7 @@ public class PlayerColorController : MonoBehaviour
         }
 
         activeColors.Clear();
-        spriteRenderer.color = baseColor;  // snap back to default green immediately
+        spriteRenderer.color = baseColor;
     }
 
 
@@ -84,11 +78,9 @@ public class PlayerColorController : MonoBehaviour
                 yield break;
             }
 
-            // Pick color and pulse it
             Color currentColor = activeColors[index % activeColors.Count];
             yield return PulseColor(currentColor);
 
-            // Move to next color
             index++;
         }
     }
@@ -99,7 +91,7 @@ public class PlayerColorController : MonoBehaviour
         float minAlpha = 0.6f;
         float maxAlpha = 1f;
 
-        float cycleTime = 0.5f; // show each color for ~0.5 seconds
+        float cycleTime = 0.5f;
         float elapsed = 0f;
 
         while (elapsed < cycleTime)

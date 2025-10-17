@@ -1,6 +1,7 @@
 using UnityEngine;
 
 [RequireComponent(typeof(Collider2D))]
+[ExecuteAlways]
 public class IngredientPickup : MonoBehaviour
 {
     [SerializeField] private IngredientType ingredientType = IngredientType.Chili;
@@ -8,7 +9,7 @@ public class IngredientPickup : MonoBehaviour
 
     private bool isCollected;
     private GameManager gameManager;
-    private GameManagerTutorial tutorialManager; // cache both once
+    private GameManagerTutorial tutorialManager;
 
     private void Awake()
     {
@@ -18,6 +19,10 @@ public class IngredientPickup : MonoBehaviour
 
     private void Start()
     {
+        ApplyVisuals();
+
+        if (!Application.isPlaying) return;
+
         gameManager = Object.FindFirstObjectByType<GameManager>();
         tutorialManager = Object.FindFirstObjectByType<GameManagerTutorial>();
 
@@ -26,6 +31,18 @@ public class IngredientPickup : MonoBehaviour
             Debug.LogError("IngredientPickup could not find any GameManager in the scene!");
         }
     }
+
+    private void OnEnable()
+    {
+        ApplyVisuals();
+    }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        ApplyVisuals();
+    }
+#endif
 
     private void OnTriggerEnter2D(Collider2D other)
     {
@@ -64,5 +81,24 @@ public class IngredientPickup : MonoBehaviour
         abilityDurationSeconds = durationSeconds;
         isCollected = false;
         gameObject.SetActive(true);
+        ApplyVisuals();
+    }
+
+    private void ApplyVisuals()
+    {
+        SpriteRenderer sr = GetComponent<SpriteRenderer>();
+        if (sr == null)
+        {
+            sr = GetComponentInChildren<SpriteRenderer>();
+        }
+
+        if (sr == null) return;
+
+        Sprite sprite = IngredientVisualFactory.GetSprite(ingredientType);
+        if (sprite != null)
+        {
+            sr.sprite = sprite;
+            sr.color = Color.white;
+        }
     }
 }

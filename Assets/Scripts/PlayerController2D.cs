@@ -53,7 +53,7 @@ public class PlayerController2D : MonoBehaviour
                 if (iceWall.TryMelt(abilityController))
                     blocked = false;
             }
-            else if (hit.collider.TryGetComponent(out WaterPatch waterPatch)) // 👈 new
+            else if (hit.collider.TryGetComponent(out WaterPatch waterPatch))
             {
                 if (waterPatch.TrySoak(abilityController))
                     blocked = false;

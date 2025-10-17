@@ -160,6 +160,8 @@ public class MazeBuilder : MonoBehaviour
         // Add tag to ingredient
         ingredient.tag = "Ingredient";
 
+        ConfigureIngredientObject(ingredient, type);
+
         // Attach IngredientPickup if not present
         if (!ingredient.TryGetComponent(out IngredientPickup pickup))
         {
@@ -197,25 +199,63 @@ public class MazeBuilder : MonoBehaviour
         ingredient.transform.SetParent(transform);
         ingredient.transform.position = position;
 
-        SpriteRenderer sr = ingredient.AddComponent<SpriteRenderer>();
-        sr.sortingOrder = 1;
-
-        if (floorPrefab != null && floorPrefab.TryGetComponent(out SpriteRenderer floorSR))
-        {
-            sr.sprite = floorSR.sprite;
-        }
-
-        sr.color = type == IngredientType.Chili
-            ? new Color(0.88f, 0.24f, 0.16f, 1f)
-            : new Color(0.99f, 0.91f, 0.47f, 1f);
-
-        float pickupScale = Mathf.Max(0.1f, cellSize * 0.6f);
-        ingredient.transform.localScale = new Vector3(pickupScale, pickupScale, 1f);
-
-        CircleCollider2D circleCollider = ingredient.AddComponent<CircleCollider2D>();
-        circleCollider.isTrigger = true;
+        ingredient.AddComponent<SpriteRenderer>();
 
         return ingredient;
+    }
+
+    void ConfigureIngredientObject(GameObject ingredient, IngredientType type)
+    {
+        if (ingredient == null) return;
+
+        SpriteRenderer sr = ingredient.GetComponent<SpriteRenderer>();
+        if (sr == null)
+        {
+            sr = ingredient.GetComponentInChildren<SpriteRenderer>();
+        }
+
+        if (sr != null)
+        {
+            sr.sortingOrder = 1;
+
+            Sprite customSprite = IngredientVisualFactory.GetSprite(type);
+            if (customSprite != null)
+            {
+                sr.sprite = customSprite;
+                sr.color = Color.white;
+            }
+            else if (floorPrefab != null && floorPrefab.TryGetComponent(out SpriteRenderer floorSR))
+            {
+                sr.sprite = floorSR.sprite;
+                sr.color = type switch
+                {
+                    IngredientType.Chili => new Color(0.88f, 0.24f, 0.16f, 1f),
+                    IngredientType.Butter => new Color(0.99f, 0.91f, 0.47f, 1f),
+                    IngredientType.Bread => new Color(0.74f, 0.47f, 0.27f, 1f),
+                    _ => sr.color
+                };
+            }
+        }
+
+        float pickupScale = Mathf.Max(0.1f, cellSize * 0.6f);
+        Vector3 targetScale = IngredientVisualFactory.GetScale(type, pickupScale);
+        ingredient.transform.localScale = targetScale;
+
+        CircleCollider2D circleCollider = ingredient.GetComponent<CircleCollider2D>();
+        if (circleCollider == null)
+        {
+            circleCollider = ingredient.AddComponent<CircleCollider2D>();
+        }
+
+        circleCollider.isTrigger = true;
+
+        float maxScale = Mathf.Max(targetScale.x, targetScale.y);
+        float minScale = Mathf.Min(targetScale.x, targetScale.y);
+        if (maxScale > 0f)
+        {
+            float desiredWorldRadius = minScale * 0.5f;
+            circleCollider.radius = desiredWorldRadius / maxScale;
+        }
     }
 
     void SpawnIceWall(Vector2 position)

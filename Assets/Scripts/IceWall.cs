@@ -36,13 +36,11 @@ public class IceWall : MonoBehaviour
             Instantiate(meltEffect, transform.position, Quaternion.identity);
         }
 
-        // tell the tutorial manager if this happens in the tutorial scene
         GameManagerTutorial tutorialManager = Object.FindFirstObjectByType<GameManagerTutorial>();
         if (tutorialManager != null)
         {
             tutorialManager.OnIceWallMelted();
         }
-        //tutorial ends
         Destroy(gameObject);
     }
 }
