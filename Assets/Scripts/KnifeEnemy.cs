@@ -71,7 +71,7 @@ public class KnifeEnemy : MonoBehaviour
         }
         else
         {
-            rb.velocity = Vector2.zero;
+            rb.linearVelocity = Vector2.zero;
         }
     }
 
@@ -149,7 +149,7 @@ public class KnifeEnemy : MonoBehaviour
     {
         state = State.Recovering;
         stateTimer = recoverDuration;
-        rb.velocity = Vector2.zero;
+        rb.linearVelocity = Vector2.zero;
     }
 
     private void AcquirePlayerReference()
