@@ -46,16 +46,23 @@ public static class IngredientVisualFactory
     private static Sprite CreateChiliSprite()
     {
         const int width = 72;
-        const int height = 52;
+        const int height = 64;
         Texture2D texture = CreateBlankTexture(width, height);
 
-        float centerX = (width - 1) * 0.5f;
-        float centerY = (height - 1) * 0.5f;
-        float radiusX = width * 0.45f;
-        float radiusY = height * 0.45f;
+        float centerX = (width - 1) * 0.46f;
+        float centerY = (height - 1) * 0.58f;
+        float chilliLength = height * 0.8f;
+        float halfLength = chilliLength * 0.5f;
 
-        Color bodyColor = new Color(0.88f, 0.24f, 0.16f);
-        Color highlightColor = new Color(1f, 0.55f, 0.35f);
+        float angleDegrees = -18f;
+        float angleRadians = angleDegrees * Mathf.Deg2Rad;
+        float cosAngle = Mathf.Cos(angleRadians);
+        float sinAngle = Mathf.Sin(angleRadians);
+
+        Color bodyColor = new Color(0.86f, 0.15f, 0.08f);
+        Color highlightColor = new Color(1f, 0.5f, 0.35f);
+        Color shadowColor = new Color(0.55f, 0.05f, 0.02f);
+        Color stemColor = new Color(0.26f, 0.58f, 0.18f);
 
         Color[] pixels = texture.GetPixels();
 
@@ -63,15 +70,54 @@ public static class IngredientVisualFactory
         {
             for (int x = 0; x < width; x++)
             {
-                float dx = (x - centerX) / radiusX;
-                float dy = (y - centerY) / radiusY;
-                float ellipse = (dx * dx) + (dy * dy);
+                float dx = x - centerX;
+                float dy = y - centerY;
 
-                if (ellipse <= 1f)
+                // Rotate to give the chili a tilt
+                float rotatedX = (dx * cosAngle) - (dy * sinAngle);
+                float rotatedY = (dx * sinAngle) + (dy * cosAngle);
+
+                if (rotatedY < -halfLength || rotatedY > halfLength)
                 {
-                    float highlightAmount = Mathf.Clamp01((centerY - y) / radiusY * 0.5f + 0.5f);
-                    Color pixel = Color.Lerp(bodyColor, highlightColor, highlightAmount * 0.6f);
-                    pixels[(y * width) + x] = pixel;
+                    continue;
+                }
+
+                float normalizedLength = Mathf.InverseLerp(-halfLength, halfLength, rotatedY);
+
+                float widthCurve = Mathf.Lerp(0.28f, 0.08f, normalizedLength);
+                widthCurve += Mathf.Sin(Mathf.Clamp01(normalizedLength) * Mathf.PI) * 0.05f;
+                float radius = width * widthCurve;
+
+                // Add a slight hook near the tip
+                rotatedX += Mathf.Lerp(0f, width * 0.1f, normalizedLength);
+
+                if (Mathf.Abs(rotatedX) > radius)
+                {
+                    continue;
+                }
+
+                int pixelIndex = (y * width) + x;
+                float sideFactor = Mathf.InverseLerp(radius, 0f, Mathf.Abs(rotatedX));
+                float highlightAmount = Mathf.Clamp01(1f - Mathf.Abs(rotatedX) / radius);
+                float shading = Mathf.Lerp(1f, 0.75f, normalizedLength);
+
+                Color baseColor = Color.Lerp(shadowColor, bodyColor, sideFactor);
+                baseColor = Color.Lerp(baseColor, highlightColor, highlightAmount * 0.45f);
+                baseColor = new Color(baseColor.r * shading, baseColor.g * shading, baseColor.b * shading, 1f);
+
+                pixels[pixelIndex] = baseColor;
+
+                // Paint stem at the top of the chili
+                if (normalizedLength < 0.12f && Mathf.Abs(rotatedX) < radius * 0.5f)
+                {
+                    float stemBlend = Mathf.InverseLerp(0.12f, 0f, normalizedLength);
+                    float stemWidth = Mathf.Lerp(radius * 0.4f, radius * 0.2f, stemBlend);
+                    if (Mathf.Abs(rotatedX) < stemWidth)
+                    {
+                        Color stemPixel = Color.Lerp(pixels[pixelIndex], stemColor, Mathf.Clamp01(stemBlend + 0.2f));
+                        stemPixel.a = 1f;
+                        pixels[pixelIndex] = stemPixel;
+                    }
                 }
             }
         }
@@ -79,7 +125,7 @@ public static class IngredientVisualFactory
         texture.SetPixels(pixels);
         texture.Apply();
 
-        texture.name = "RuntimeChiliOval";
+        texture.name = "RuntimeChiliPepper";
         return CreateSprite(texture);
     }
 
