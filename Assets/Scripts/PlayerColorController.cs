@@ -118,6 +118,8 @@ public class PlayerColorController : MonoBehaviour
             IngredientType.Chili => new Color(1f, 0.35f, 0f, 1f),
             IngredientType.Butter => new Color(1f, 0.9f, 0.3f, 1f), 
             IngredientType.Bread => new Color(0.35f, 0.2f, 0.05f, 1f), 
+            IngredientType.Garlic => new Color(0.9f, 0.92f, 0.8f, 1f),
+            IngredientType.Chocolate => new Color(0.5f, 0.32f, 0.2f, 1f),
             _ => baseColor
         };
     }

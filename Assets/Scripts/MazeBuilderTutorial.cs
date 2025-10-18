@@ -219,6 +219,8 @@ public class MazeBuilderTutorial : MonoBehaviour
                     IngredientType.Chili => new Color(0.88f, 0.24f, 0.16f, 1f),
                     IngredientType.Butter => new Color(0.99f, 0.91f, 0.47f, 1f),
                     IngredientType.Bread => new Color(0.74f, 0.47f, 0.27f, 1f),
+                    IngredientType.Garlic => new Color(0.9f, 0.92f, 0.82f, 1f),
+                    IngredientType.Chocolate => new Color(0.46f, 0.28f, 0.16f, 1f),
                     _ => sr.color
                 };
             }
