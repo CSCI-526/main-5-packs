@@ -5,7 +5,9 @@ public enum IngredientType
 {
     Chili,
     Butter,
-    Bread
+    Bread,
+    Garlic,
+    Chocolate
 }
 
 public class PlayerAbilityController : MonoBehaviour
@@ -36,6 +38,7 @@ public class PlayerAbilityController : MonoBehaviour
     [Header("Ability Balancing")]
     [SerializeField] private float butterSpeedMultiplier = 1.4f;
     [SerializeField] private float stickySlowMultiplier = 0.35f;
+    [SerializeField] private float chocolateSpeedMultiplier = 1.25f;
 
     private readonly Dictionary<IngredientType, ActiveAbility> activeAbilities = new();
     private static readonly List<IngredientType> expiredBuffer = new();
@@ -150,6 +153,11 @@ public class PlayerAbilityController : MonoBehaviour
         if (HasAbility(IngredientType.Butter))
         {
             multiplier *= butterSpeedMultiplier;
+        }
+
+        if (HasAbility(IngredientType.Chocolate))
+        {
+            multiplier *= chocolateSpeedMultiplier;
         }
 
         return multiplier;

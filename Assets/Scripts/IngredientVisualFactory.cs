@@ -17,6 +17,8 @@ public static class IngredientVisualFactory
             IngredientType.Chili => CreateChiliSprite(),
             IngredientType.Butter => CreateButterSprite(),
             IngredientType.Bread => CreateBreadSprite(),
+            IngredientType.Garlic => CreateGarlicSprite(),
+            IngredientType.Chocolate => CreateChocolateSprite(),
             _ => null
         };
 
@@ -35,6 +37,8 @@ public static class IngredientVisualFactory
             IngredientType.Chili => new Vector3(baseScale * 1.05f, baseScale * 0.75f, 1f),
             IngredientType.Butter => new Vector3(baseScale * 0.85f, baseScale * 0.85f, 1f),
             IngredientType.Bread => new Vector3(baseScale * 0.7f, baseScale * 0.6f, 1f),
+            IngredientType.Garlic => new Vector3(baseScale * 0.75f, baseScale * 0.9f, 1f),
+            IngredientType.Chocolate => new Vector3(baseScale * 0.65f, baseScale * 0.65f, 1f),
             _ => new Vector3(baseScale, baseScale, 1f)
         };
     }
@@ -161,6 +165,92 @@ public static class IngredientVisualFactory
         texture.Apply();
 
         texture.name = "RuntimeBreadSlice";
+        return CreateSprite(texture);
+    }
+
+    private static Sprite CreateGarlicSprite()
+    {
+        const int width = 60;
+        const int height = 68;
+        Texture2D texture = CreateBlankTexture(width, height);
+
+        Color bulbColor = new Color(0.95f, 0.93f, 0.86f);
+        Color highlightColor = new Color(1f, 0.99f, 0.94f);
+        Color shadowColor = new Color(0.84f, 0.8f, 0.7f);
+
+        Color[] pixels = texture.GetPixels();
+
+        float centerX = (width - 1) * 0.5f;
+        float centerY = (height - 1) * 0.45f;
+        float radiusX = width * 0.45f;
+        float radiusY = height * 0.55f;
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                float dx = (x - centerX) / radiusX;
+                float dy = (y - centerY) / radiusY;
+                float distance = (dx * dx) + (dy * dy);
+
+                if (distance <= 1f)
+                {
+                    float vertical = Mathf.Clamp01((float)y / height);
+                    Color baseColor = Color.Lerp(shadowColor, bulbColor, vertical);
+                    float highlight = Mathf.Clamp01(1f - Mathf.Abs(x - centerX) / radiusX);
+                    Color finalColor = Color.Lerp(baseColor, highlightColor, highlight * 0.4f);
+                    pixels[(y * width) + x] = finalColor;
+                }
+            }
+        }
+
+        texture.SetPixels(pixels);
+        texture.Apply();
+
+        texture.name = "RuntimeGarlicBulb";
+        return CreateSprite(texture);
+    }
+
+    private static Sprite CreateChocolateSprite()
+    {
+        const int width = 64;
+        const int height = 64;
+        Texture2D texture = CreateBlankTexture(width, height);
+
+        Color barColor = new Color(0.38f, 0.2f, 0.11f);
+        Color edgeColor = new Color(0.24f, 0.13f, 0.07f);
+        Color highlightColor = new Color(0.55f, 0.33f, 0.2f);
+
+        Color[] pixels = texture.GetPixels();
+
+        int rows = 2;
+        int cols = 2;
+        float cellWidth = width / (float)cols;
+        float cellHeight = height / (float)rows;
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                float cellX = Mathf.Floor(x / cellWidth);
+                float cellY = Mathf.Floor(y / cellHeight);
+                float u = (x % cellWidth) / cellWidth;
+                float v = (y % cellHeight) / cellHeight;
+
+                float edgeBlend = Mathf.Clamp01(Mathf.Min(Mathf.Min(u, 1f - u), Mathf.Min(v, 1f - v)) * 4f);
+                Color baseColor = Color.Lerp(edgeColor, barColor, edgeBlend);
+
+                float highlight = Mathf.Clamp01(1f - ((cellX + cellY) % 2 == 0 ? v : u));
+                Color finalColor = Color.Lerp(baseColor, highlightColor, highlight * 0.2f);
+
+                pixels[(y * width) + x] = finalColor;
+            }
+        }
+
+        texture.SetPixels(pixels);
+        texture.Apply();
+
+        texture.name = "RuntimeChocolateBar";
         return CreateSprite(texture);
     }
 

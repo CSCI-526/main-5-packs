@@ -44,13 +44,10 @@ public class MazeBuilder : MonoBehaviour
             "##########################"
         };
 
-        // 1. Build the entire maze. We don't need its return value anymore.
         BuildMaze(maze);
         
-        // 2. Search the scene for all objects with the "Ingredient" tag and get the count.
         int ingredientCount = GameObject.FindGameObjectsWithTag("Ingredient").Length;
 
-        // 3. Notify the GameManager.
         if (gameManager != null)
         {
             gameManager.StartLevel(ingredientCount);
@@ -136,7 +133,6 @@ public class MazeBuilder : MonoBehaviour
     {
         GameObject prefab = null;
 
-        // Choose correct prefab based on ingredient type
         switch (type)
         {
             case IngredientType.Chili:
@@ -152,17 +148,14 @@ public class MazeBuilder : MonoBehaviour
                 break;
         }
 
-        // Spawn prefab or create fallback
         GameObject ingredient = prefab != null
             ? Instantiate(prefab, position, Quaternion.identity, transform)
             : CreateRuntimeIngredient(type, position);
 
-        // Add tag to ingredient
         ingredient.tag = "Ingredient";
 
         ConfigureIngredientObject(ingredient, type);
 
-        // Attach IngredientPickup if not present
         if (!ingredient.TryGetComponent(out IngredientPickup pickup))
         {
             pickup = ingredient.AddComponent<IngredientPickup>();
@@ -232,6 +225,8 @@ public class MazeBuilder : MonoBehaviour
                     IngredientType.Chili => new Color(0.88f, 0.24f, 0.16f, 1f),
                     IngredientType.Butter => new Color(0.99f, 0.91f, 0.47f, 1f),
                     IngredientType.Bread => new Color(0.74f, 0.47f, 0.27f, 1f),
+                    IngredientType.Garlic => new Color(0.9f, 0.92f, 0.82f, 1f),
+                    IngredientType.Chocolate => new Color(0.46f, 0.28f, 0.16f, 1f),
                     _ => sr.color
                 };
             }
@@ -324,14 +319,12 @@ public class MazeBuilder : MonoBehaviour
         float width = layout[0].Length * cellSize;
         float height = layout.Length * cellSize;
 
-        // maze center calc
         Vector3 center = new Vector3(
             (width - cellSize) / 2f,
             -(height - cellSize) / 2f,
             -10f
         );
 
-        // Move cam to center and fit 
         if (Camera.main != null)
         {
             Camera.main.transform.position = center;
