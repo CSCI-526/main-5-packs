@@ -28,7 +28,7 @@ public class IngredientPickup : MonoBehaviour
 
         if (gameManager == null && tutorialManager == null)
         {
-            Debug.LogError("IngredientPickup could not find any GameManager in the scene!");
+            Debug.LogWarning("IngredientPickup could not find any GameManager in the scene. Pickups will still function for sandbox testing.");
         }
     }
 

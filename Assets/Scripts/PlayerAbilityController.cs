@@ -113,6 +113,26 @@ public class PlayerAbilityController : MonoBehaviour
         return true;
     }
 
+    public bool TryConsumeAnyAbility(out IngredientType consumedType)
+    {
+        if (activeAbilities.Count == 0)
+        {
+            consumedType = default;
+            return false;
+        }
+
+        using Dictionary<IngredientType, ActiveAbility>.Enumerator enumerator = activeAbilities.GetEnumerator();
+        if (!enumerator.MoveNext())
+        {
+            consumedType = default;
+            return false;
+        }
+
+        consumedType = enumerator.Current.Key;
+        ConsumeAbility(consumedType);
+        return true;
+    }
+
     public bool HasAbility(IngredientType type)
     {
         return activeAbilities.ContainsKey(type);
