@@ -73,7 +73,6 @@ public static class IngredientVisualFactory
                 float dx = x - centerX;
                 float dy = y - centerY;
 
-                // Rotate to give the chili a tilt
                 float rotatedX = (dx * cosAngle) - (dy * sinAngle);
                 float rotatedY = (dx * sinAngle) + (dy * cosAngle);
 
@@ -88,7 +87,6 @@ public static class IngredientVisualFactory
                 widthCurve += Mathf.Sin(Mathf.Clamp01(normalizedLength) * Mathf.PI) * 0.05f;
                 float radius = width * widthCurve;
 
-                // Add a slight hook near the tip
                 rotatedX += Mathf.Lerp(0f, width * 0.1f, normalizedLength);
 
                 if (Mathf.Abs(rotatedX) > radius)
@@ -107,7 +105,6 @@ public static class IngredientVisualFactory
 
                 pixels[pixelIndex] = baseColor;
 
-                // Paint stem at the top of the chili
                 if (normalizedLength < 0.12f && Mathf.Abs(rotatedX) < radius * 0.5f)
                 {
                     float stemBlend = Mathf.InverseLerp(0.12f, 0f, normalizedLength);
