@@ -19,6 +19,11 @@ while [[ $# -gt 0 ]]; do
             ;;
         --format)
             FORMAT="$2"
+            # Validate format parameter
+            if [[ ! "$FORMAT" =~ ^(default|markdown|json)$ ]]; then
+                echo "Error: Invalid format '$FORMAT'. Must be one of: default, markdown, json"
+                exit 1
+            fi
             shift 2
             ;;
         --help)
@@ -45,16 +50,12 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Build git log command
-GIT_CMD="git log --all --pretty=format:'%H|%an|%ae|%ad|%s' --date=iso --since=\"$START_DATE\" --until=\"$END_DATE\""
-
-# Add author filter if specified
-if [ -n "$AUTHOR" ]; then
-    GIT_CMD="$GIT_CMD --author=\"$AUTHOR\""
-fi
-
 # Execute git command and process output
-COMMITS=$(eval $GIT_CMD)
+if [ -n "$AUTHOR" ]; then
+    COMMITS=$(git log --all --pretty=format:'%H|%an|%ae|%ad|%s' --date=iso --since="$START_DATE" --until="$END_DATE" --author="$AUTHOR")
+else
+    COMMITS=$(git log --all --pretty=format:'%H|%an|%ae|%ad|%s' --date=iso --since="$START_DATE" --until="$END_DATE")
+fi
 
 if [ -z "$COMMITS" ]; then
     echo "No commits found in the last week of October 2025 (Oct 24-31)"
