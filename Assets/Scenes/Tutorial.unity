@@ -1429,7 +1429,7 @@ MonoBehaviour:
   messageBackground: {r: 0, g: 0, b: 0, a: 0.55}
   levelIntroMessage: "Tutorial \u2013 Learn how Ember and Aqua solve hazards together."
   levelStartMessage: Work together. Ember melts ice; Aqua extinguishes fire.
-  levelVictoryMessage: Victory! Both heroes reached safety. Press R to play again.
+  levelVictoryMessage: Victory! Both heroes reached safety.
   waitForPartnerMessage: '{0} made it. Wait for your partner!'
   exitReminderMessage: Both heroes must stand in the exit to finish.
   startingHearts: 3

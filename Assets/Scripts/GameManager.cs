@@ -37,7 +37,7 @@ public class GameManager : MonoBehaviour
     [Header("UI Messages")]
     [SerializeField] private string levelIntroMessage = "";
     [SerializeField] private string levelStartMessage = "";
-    [SerializeField] private string levelVictoryMessage = "Victory! Both heroes reached safety. Press R to play again.";
+    [SerializeField] private string levelVictoryMessage = "Victory! Both heroes reached safety.";
     [SerializeField] private string waitForPartnerMessage = "{0} made it. Wait for your partner!";
     [SerializeField] private string exitReminderMessage = "Both heroes must stand in the exit to finish.";
     [Header("Player Hearts")]

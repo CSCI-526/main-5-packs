@@ -361,8 +361,7 @@ MonoBehaviour:
   messageBackground: {r: 0, g: 0, b: 0, a: 0.55}
   tutorialStartMessage: Welcome! Follow Instructions on the screen to complete the
     tutorial.
-  levelVictoryMessage: Tutorial Complete! Press R to play again or continue to Level
-    1.
+  levelVictoryMessage: Tutorial Complete! Continue to Level 1.
   waitForPartnerMessage: '{0} made it. Wait for your partner!'
   exitReminderMessage: Both heroes must stand in the exit to finish.
   startingHearts: 3

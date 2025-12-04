@@ -64,7 +64,7 @@ MonoBehaviour:
   upperUiFont: {fileID: 11400000, guid: f2194ea0113c544a8ab2d6c0297ef4be, type: 2}
   levelIntroMessage: 
   levelStartMessage: 
-  levelVictoryMessage: Victory! Both heroes reached safety. Press R to play again.
+  levelVictoryMessage: Victory! Both heroes reached safety.
   waitForPartnerMessage: '{0} made it. Wait for your partner!'
   exitReminderMessage: Both heroes must stand in the exit to finish.
   startingHearts: 3

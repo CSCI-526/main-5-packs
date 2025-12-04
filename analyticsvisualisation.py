@@ -21,11 +21,11 @@ def plot_avg_time_success(df):
     import matplotlib.pyplot as plt
     import numpy as np
 
-    bg_color = "#f5e9d4"    # outer background
-    ax_color = "#fdf8f0"    # plot background
+    bg_color = "#f5e9d4"    
+    ax_color = "#fdf8f0"    
 
-    bar_color  = "#1f77b4"  # deep blue
-    edge_color = "#4b4038"  # warm brown
+    bar_color  = "#1f77b4"  
+    edge_color = "#4b4038"  
 
     df_plot = df.copy()
     levels = df_plot["level_id"].tolist()
@@ -111,12 +111,10 @@ def plot_survival_curve(df):
 
     x = np.arange(len(levels))
 
-    # --- Figure ---
+
     fig, ax = plt.subplots(figsize=(12, 6))
     fig.patch.set_facecolor(bg_color)
     ax.set_facecolor(ax_color)
-
-    # --- Line plot ---
     ax.plot(
         x,
         survival,
@@ -129,7 +127,6 @@ def plot_survival_curve(df):
         markeredgewidth=2
     )
 
-    # --- Label each point with % ---
     for xi, yi in zip(x, survival):
         ax.text(
             xi,
@@ -144,7 +141,6 @@ def plot_survival_curve(df):
 
     ax.set_ylim(0, 1.10)  
 
-    # --- Titles, Labels ---
     ax.set_title(
         "Player Survival Curve Across Levels",
         fontsize=22,
@@ -538,7 +534,7 @@ def build_ascii_scatter(level, layout, size_scale=200):
 
 def plot_ascii(layout, rows, cols, sizes, colors,
                n_rows, n_cols, title, cbar_label):
-    """Draw ASCII maze with scatter overlay (same styling as original)."""
+    """Draw ASCII maze with scatter overlay."""
     plt.figure(figsize=(8, 4))
 
     plt.imshow(np.zeros((n_rows, n_cols)), cmap="gray_r", origin="upper")
@@ -577,8 +573,7 @@ def build_image_scatter(level, layout, img,
                         grid_bottom_frac, grid_top_frac,
                         size_scale=300):
     """
-    Map tile coordinates to image pixel positions using the same fraction logic
-    as your original code.
+    Map tile coordinates to image pixel positions.
     """
     h, w = img.shape[:2]
 
@@ -611,7 +606,6 @@ def build_image_scatter(level, layout, img,
 
 
 def plot_image_overlay(img, xs, ys, sizes, labels, title):
-    """Draw maze PNG with bubble overlay (same style as original)."""
     plt.figure(figsize=(10, 4))
     plt.imshow(img)
 
@@ -756,23 +750,23 @@ plot_image_overlay(
 LEVEL2_NAME = "Level2Scene"
 
 layout2 = [
-
-    "###########################",
-    "#F........##############.W#",
-    "#.###.###I##############..#",
-    "#...#.#.........I....H....#",
-    "###.#.######H##########.###",
-    "#.#.#.#.#.#..##########.###",
-    "#.#.###.I...###########.###",
-    "#.#.....#........H..I....##",
-    "#.########H################",
-    "#..I..H.....#########....##",
-    "#.###################.....#",
-    "#.........................#",
-    "#.........................#",
-    "#.........................#",
-    "#.1111..2222..1111..2222.E#",
-    "###########################"
+    
+     "###########################",
+     "#F........##############.W#",
+     "#.###.###I##############..#",
+     "#...#.#.........I....H....#",
+     "###.#.######H##########.###",
+     "#.#.#.#.#.#..##########.###",
+     "#.#.###.I...###########.###",
+     "#.#.....#........H..I....##",
+     "#.########H################",
+     "#..I..H.....#########....##",
+     "#.###################.....#",
+     "#.........................#",
+     "#.........................#",
+     "#.........................#",
+     "#.111...222...111...222..E#",
+     "###########################"
 ]
 
 level2 = prepare_level(df_heartloss, LEVEL2_NAME)
@@ -828,18 +822,19 @@ plot_image_overlay(
 LEVEL3_NAME = "Level3Scene"
 
 layout3 = [
+    
     "#########################",
-    "##...#.#.#.............##",
-    "##...#.#.#.#.#.#.#.#....#",
+    "##...#.#.#..............#",
+    "#....#.#.#.#.#.#.#.#....#",
     "#....#...#.#.#.#.#.#...##",
-    "##.....#...#.#.#.#.#.#.##",
-    "##...#.#.#.#.#.#.#.#...##",
-    "##.#.#.###.#...#.#.#...F#",
-    "#W...#...#.#.#.#.#.#...##",
+    "##.....#...#.#.#.#.#....#",
+    "##...#.#.#.#.#.#.#.#.#..#",
+    "#....#.###.#...#.#.#...F#",
+    "#W.#.#...#.#.#.#.#.#...##",
     "#....#.#.#.#.#.#.#.#...##",
     "##...#.#.#.#.#...#.#...##",
     "##222#.#.....#.#...#111##",
-    "#########################"
+    "#########################" 
 ]
 
 level3 = prepare_level(df_heartloss, LEVEL3_NAME)
