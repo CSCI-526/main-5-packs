@@ -2,13 +2,13 @@ using UnityEngine;
 using TMPro;
 using System;
 
-/// <summary>
-/// Displays a world-space instruction text in the tutorial maze.
-/// Shows the text when the scene starts and can optionally hide it after a delay or when triggered.
-/// </summary>
+
+
+
+
 public class TutorialInstructionText : MonoBehaviour
 {
-    // Event fired when instruction is hidden
+    
     public event Action OnInstructionHidden;
 
     [Header("Text Settings")]
@@ -93,7 +93,7 @@ public class TutorialInstructionText : MonoBehaviour
     {
         SetupText();
         
-        // Delay player glow setup to ensure players have spawned
+        
         if (autoDetectPlayer && targetPlayer == null)
         {
             StartCoroutine(SetupPlayerGlowDelayed());
@@ -120,10 +120,10 @@ public class TutorialInstructionText : MonoBehaviour
 
     private System.Collections.IEnumerator SetupPlayerGlowDelayed()
     {
-        // Wait a frame to ensure players have spawned
+        
         yield return null;
         
-        // Try to find player, wait a bit more if not found
+        
         int attempts = 0;
         while (targetPlayer == null && attempts < 10)
         {
@@ -137,16 +137,36 @@ public class TutorialInstructionText : MonoBehaviour
 
         SetupPlayerGlow();
         
-        // If we found the player and instruction should be visible, start glow
+        
         if (_playerGlow != null && _isVisible)
         {
             _playerGlow.StartGlow();
         }
     }
 
+    private System.Collections.IEnumerator CheckRendererDelayed()
+    {
+        yield return null; 
+        
+        if (_textMesh != null)
+        {
+            MeshRenderer renderer = _textMesh.GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                renderer.sortingOrder = 10;
+                renderer.enabled = true;
+                Debug.Log($"[TutorialInstructionText] Renderer found after delay on {gameObject.name}, enabled: {renderer.enabled}");
+            }
+            else
+            {
+                Debug.LogError($"[TutorialInstructionText] Still no MeshRenderer found after delay on {gameObject.name}");
+            }
+        }
+    }
+
     private void SetupPlayerGlow()
     {
-        // Auto-detect player if enabled and target not set
+        
         if (autoDetectPlayer && targetPlayer == null)
         {
             FindTargetPlayer();
@@ -154,19 +174,19 @@ public class TutorialInstructionText : MonoBehaviour
 
         if (targetPlayer == null) return;
 
-        // Try to get PlayerGlowEffect component from the target player
+        
         _playerGlow = targetPlayer.GetComponent<PlayerGlowEffect>();
         if (_playerGlow == null)
         {
-            // Auto-add it if it doesn't exist
+            
             _playerGlow = targetPlayer.AddComponent<PlayerGlowEffect>();
         }
     }
 
     private void FindTargetPlayer()
     {
-        // Find players by role based on which keys this instruction uses
-        PlayerRole? targetRole = null; // Don't default - be explicit
+        
+        PlayerRole? targetRole = null; 
 
         if (hideOnArrowKeys && !hideOnWASD)
         {
@@ -176,16 +196,16 @@ public class TutorialInstructionText : MonoBehaviour
         {
             targetRole = PlayerRole.Fireboy;
         }
-        // If both are enabled or neither, don't auto-detect (return null)
-        // This prevents instructions without input detection from incorrectly targeting a player
+        
+        
 
         if (!targetRole.HasValue)
         {
-            // Can't determine target player from input flags, so don't set targetPlayer
+            
             return;
         }
 
-        // Search for player with matching role
+        
         CoopPlayerController[] players = FindObjectsByType<CoopPlayerController>(FindObjectsSortMode.None);
         foreach (CoopPlayerController player in players)
         {
@@ -199,15 +219,15 @@ public class TutorialInstructionText : MonoBehaviour
 
     private void StopPlayerGlow()
     {
-        // First try to use the cached reference
+        
         if (_playerGlow != null)
         {
             _playerGlow.StopGlow();
             return;
         }
 
-        // If cached reference is null, try to find the player and glow component
-        // This handles cases where the glow setup coroutine hasn't completed yet
+        
+        
         if (targetPlayer != null)
         {
             PlayerGlowEffect glow = targetPlayer.GetComponent<PlayerGlowEffect>();
@@ -218,8 +238,8 @@ public class TutorialInstructionText : MonoBehaviour
         }
         else if (autoDetectPlayer)
         {
-            // Auto-detect player and stop glow
-            PlayerRole? targetRole = null; // Don't default - be explicit
+            
+            PlayerRole? targetRole = null; 
 
             if (hideOnArrowKeys && !hideOnWASD)
             {
@@ -230,10 +250,10 @@ public class TutorialInstructionText : MonoBehaviour
                 targetRole = PlayerRole.Fireboy;
             }
 
-            // Only stop glow if we can determine the target role
+            
             if (targetRole.HasValue)
             {
-                // Find player with matching role and stop glow
+                
                 CoopPlayerController[] players = FindObjectsByType<CoopPlayerController>(FindObjectsSortMode.None);
                 foreach (CoopPlayerController player in players)
                 {
@@ -257,7 +277,7 @@ public class TutorialInstructionText : MonoBehaviour
 
         bool shouldHide = false;
 
-        // Check for WASD input
+        
         if (hideOnWASD)
         {
             if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.A) || 
@@ -267,7 +287,7 @@ public class TutorialInstructionText : MonoBehaviour
             }
         }
 
-        // Check for Arrow key input
+        
         if (hideOnArrowKeys)
         {
             if (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.DownArrow) || 
@@ -286,14 +306,48 @@ public class TutorialInstructionText : MonoBehaviour
 
     private void SetupText()
     {
-        // Get or create TextMeshPro component
+        
+        if (!gameObject.activeSelf)
+        {
+            gameObject.SetActive(true);
+        }
+
+        
         _textMesh = GetComponent<TextMeshPro>();
         if (_textMesh == null)
         {
             _textMesh = gameObject.AddComponent<TextMeshPro>();
+            Debug.Log($"[TutorialInstructionText] Created TextMeshPro component on {gameObject.name}");
         }
 
-        // Configure text
+        
+        
+        if (_textMesh.font == null)
+        {
+            
+            if (TMP_Settings.defaultFontAsset != null)
+            {
+                _textMesh.font = TMP_Settings.defaultFontAsset;
+                Debug.Log($"[TutorialInstructionText] Assigned default font to {gameObject.name}");
+            }
+            else
+            {
+                Debug.LogError($"[TutorialInstructionText] No default font asset found in TMP Settings for {gameObject.name}");
+            }
+        }
+        
+        
+        
+        if (_textMesh.font != null && _textMesh.fontSharedMaterial == null)
+        {
+            
+            if (_textMesh.font.material != null)
+            {
+                _textMesh.fontSharedMaterial = _textMesh.font.material;
+            }
+        }
+
+        
         _textMesh.text = instructionText;
         _textMesh.color = textColor;
         _textMesh.fontSize = fontSize;
@@ -302,7 +356,7 @@ public class TutorialInstructionText : MonoBehaviour
         _textMesh.textWrappingMode = textWrappingMode;
         _textMesh.fontStyle = FontStyles.Bold;
 
-        // Set text area size if specified (for world-space TextMeshPro)
+        
         if (textWidth > 0f || textHeight > 0f)
         {
             Rect rect = _textMesh.rectTransform.rect;
@@ -311,30 +365,84 @@ public class TutorialInstructionText : MonoBehaviour
             _textMesh.rectTransform.sizeDelta = new Vector2(width, height);
         }
 
-        // Store original color for fade effect
+        
+        MeshRenderer renderer = _textMesh.GetComponent<MeshRenderer>();
+        if (renderer != null)
+        {
+            renderer.sortingOrder = 10; 
+            renderer.enabled = true; 
+            Debug.Log($"[TutorialInstructionText] Renderer found on {gameObject.name}, sortingOrder: {renderer.sortingOrder}, enabled: {renderer.enabled}, material: {renderer.sharedMaterial != null}");
+        }
+        else
+        {
+            Debug.LogWarning($"[TutorialInstructionText] No MeshRenderer found on {gameObject.name} after creating TextMeshPro");
+            
+            StartCoroutine(CheckRendererDelayed());
+        }
+
+        
+        _textMesh.ForceMeshUpdate();
+        
+        
+        Debug.Log($"[TutorialInstructionText] SetupText complete for {gameObject.name}: text='{instructionText}', font={_textMesh.font != null}, position={transform.position}, active={gameObject.activeSelf}");
+
+        
         _originalColor = textColor;
     }
 
-    /// <summary>
-    /// Show the instruction text
-    /// </summary>
+    
+    
+    
     public void Show()
     {
+        Debug.Log($"[TutorialInstructionText] Show() called for {gameObject.name}");
+        
+        
+        if (!gameObject.activeSelf)
+        {
+            gameObject.SetActive(true);
+            Debug.Log($"[TutorialInstructionText] Activated GameObject {gameObject.name}");
+        }
+
         if (_textMesh == null) SetupText();
+        
+        if (_textMesh == null)
+        {
+            Debug.LogError($"[TutorialInstructionText] TextMeshPro is null after SetupText for {gameObject.name}");
+            return;
+        }
         
         _isVisible = true;
         _isHiding = false;
         _hasFiredEvent = false;
         _textMesh.color = _originalColor;
         _textMesh.gameObject.SetActive(true);
+        
+        
+        MeshRenderer renderer = _textMesh.GetComponent<MeshRenderer>();
+        if (renderer != null)
+        {
+            renderer.enabled = true;
+            Debug.Log($"[TutorialInstructionText] Enabled renderer on {gameObject.name}, sortingOrder: {renderer.sortingOrder}");
+        }
+        else
+        {
+            Debug.LogWarning($"[TutorialInstructionText] No MeshRenderer found when showing {gameObject.name}");
+        }
+        
+        
+        _textMesh.ForceMeshUpdate();
+        
+        
+        Debug.Log($"[TutorialInstructionText] Show() complete for {gameObject.name}: text='{_textMesh.text}', font={_textMesh.font != null}, color={_textMesh.color}, position={transform.position}, bounds={_textMesh.bounds}");
 
-        // Start text glow effect
+        
         if (enableTextGlow)
         {
             StartTextGlow();
         }
 
-        // Start player glow effect
+        
         if (_playerGlow != null)
         {
             _playerGlow.StartGlow();
@@ -350,9 +458,9 @@ public class TutorialInstructionText : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Hide the instruction text (with optional fade out)
-    /// </summary>
+    
+    
+    
     public void Hide()
     {
         if (_textMesh == null || !_isVisible) return;
@@ -360,17 +468,17 @@ public class TutorialInstructionText : MonoBehaviour
         _isVisible = false;
         _isHiding = false;
 
-        // Stop text glow effect
+        
         StopTextGlow();
 
-        // Stop player glow effect immediately
+        
         StopPlayerGlow();
 
-        // Cancel any pending hide invokes
+        
         CancelInvoke(nameof(Hide));
         CancelInvoke(nameof(StopPlayerGlow));
 
-        // Stop any running fade coroutine
+        
         if (_fadeCoroutine != null)
         {
             StopCoroutine(_fadeCoroutine);
@@ -383,15 +491,25 @@ public class TutorialInstructionText : MonoBehaviour
         }
         else
         {
-            _textMesh.gameObject.SetActive(false);
-            // Fire event when hidden (immediate)
+            
+            MeshRenderer renderer = _textMesh.GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                renderer.enabled = false;
+            }
+            else
+            {
+                
+                _textMesh.gameObject.SetActive(false);
+            }
+            
             FireHiddenEvent();
         }
     }
 
-    /// <summary>
-    /// Update the instruction text programmatically
-    /// </summary>
+    
+    
+    
     public void SetText(string newText)
     {
         instructionText = newText;
@@ -418,7 +536,7 @@ public class TutorialInstructionText : MonoBehaviour
             _textGlowCoroutine = null;
         }
         
-        // Restore original color
+        
         if (_textMesh != null)
         {
             _textMesh.color = _originalColor;
@@ -429,13 +547,13 @@ public class TutorialInstructionText : MonoBehaviour
     {
         while (_isVisible && !_isHiding)
         {
-            // Calculate pulse value using PingPong (oscillates between 0 and 1)
+            
             float pulse = Mathf.PingPong(Time.time * glowSpeed, 1f);
 
-            // Interpolate between min and max intensity
+            
             float intensity = Mathf.Lerp(minGlowIntensity, maxGlowIntensity, pulse);
 
-            // Blend the original color with the glow color based on intensity
+            
             Color blendedColor = Color.Lerp(_originalColor, glowColor, intensity);
             _textMesh.color = blendedColor;
 
@@ -456,16 +574,26 @@ public class TutorialInstructionText : MonoBehaviour
             yield return null;
         }
 
-        _textMesh.gameObject.SetActive(false);
+        
+        MeshRenderer renderer = _textMesh.GetComponent<MeshRenderer>();
+        if (renderer != null)
+        {
+            renderer.enabled = false;
+        }
+        else
+        {
+            
+            _textMesh.gameObject.SetActive(false);
+        }
         _fadeCoroutine = null;
 
-        // Fire event when fade completes
+        
         FireHiddenEvent();
     }
 
     private void OnValidate()
     {
-        // Update text in editor when values change
+        
         if (_textMesh != null && Application.isPlaying)
         {
             SetupText();

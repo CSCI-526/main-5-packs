@@ -1,7 +1,8 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using TMPro; // Still needed for other UI elements
+using TMPro; 
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
@@ -9,6 +10,8 @@ using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
+    public static GameManager Instance { get; private set; }
+
     public enum DamageCause
     {
         Unknown = 0,
@@ -18,23 +21,28 @@ public class GameManager : MonoBehaviour
         ProjectileFire = 4,
         ProjectileIce = 5
     }
-    // Assist metrics removed
+    
 
-    // --- MODIFICATION START ---
-    // ... (你所有的 [Header] 和 [SerializeField] 变量都保持不变) ...
-    // ... (isTutorialMode, messageBackground, levelIntroMessage, etc.) ...
+    
+    
     [Header("Tutorial Settings")]
     [SerializeField] private bool isTutorialMode = false;
 
     [SerializeField] private Color messageBackground = new Color(0f, 0f, 0f, 0.55f);
+    [Header("UI Fonts")]
+    [SerializeField] private TMP_FontAsset upperUiFont;
+    private const string UpperUiFontResourcePath = "Fonts/UncialAntiqua-Regular SDF";
+    [SerializeField] private TMP_FontAsset instructionFont;
+    private const string InstructionFontResourcePath = "Fonts/TaiHeritagePro-Regular SDF";
     [Header("UI Messages")]
-    [SerializeField] private string levelIntroMessage = "Work together: melt the ice, douse the fire, and reach the exit.";
-    [SerializeField] private string levelStartMessage = "Work together. Ember melts ice; Aqua extinguishes fire.";
-    [SerializeField] private string levelVictoryMessage = "Victory! Both heroes reached safety. Press R to play again.";
+    [SerializeField] private string levelIntroMessage = "";
+    [SerializeField] private string levelStartMessage = "";
+    [SerializeField] private string levelVictoryMessage = "";
     [SerializeField] private string waitForPartnerMessage = "{0} made it. Wait for your partner!";
     [SerializeField] private string exitReminderMessage = "Both heroes must stand in the exit to finish.";
     [Header("Player Hearts")]
     [SerializeField] private int startingHearts = 3;
+    private const int MaxBonusHeartReward = 1;
     [Header("Progression")]
     [SerializeField] private string nextSceneName;
     [SerializeField] private float nextSceneDelaySeconds = 2f;
@@ -43,6 +51,18 @@ public class GameManager : MonoBehaviour
     [SerializeField] private bool useVictoryPanel = true;
     [SerializeField] private string victoryTitleText = "Level Complete";
     [SerializeField] private string victoryBodyText = "Choose where to go next.";
+    
+    [SerializeField] private string[] victorySlogans = new[]
+    {
+        "No Cap, That Was Epic!",
+        "Main Character Energy!",
+        "Slayed It!",
+        "Built Different!",
+        "GOATed Behavior!",
+        "Vibe Check: Passed!",
+        "Sheeeeeesh! You Did That!"
+    };
+    
     [SerializeField] private string defeatTitleText = "Out of Hearts";
     [SerializeField] private string defeatBodyText = "You ran out of hearts. Try again?";
     [SerializeField] private string nextLevelButtonText = "Next Level";
@@ -60,11 +80,15 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int basePoints = 1000;
     [SerializeField] private int pointsPerToken = 100;
     [SerializeField] private float timeBonusMultiplier = 50f;
-    [SerializeField] private float targetTimeSeconds = 60f; // Level 1: 1 minute
+    [SerializeField] private float targetTimeSeconds = 60f; 
     [Tooltip("Target time for Level 2. Set to 0 to use targetTimeSeconds.")]
-    [SerializeField] private float level2TargetTimeSeconds = 180f; // Level 2: 3 minutes
+    [SerializeField] private float level2TargetTimeSeconds = 180f; 
     [Tooltip("Target time for Level 3. Set to 0 to use targetTimeSeconds.")]
-    [SerializeField] private float level3TargetTimeSeconds = 120f; // Level 3: 2 minutes
+    [SerializeField] private float level3TargetTimeSeconds = 120f; 
+    [Tooltip("Target time for Level 4. Set to 0 to use targetTimeSeconds.")]
+    [SerializeField] private float level4TargetTimeSeconds = 150f; 
+    [Tooltip("Target time for Level 5. Set to 0 to use targetTimeSeconds.")]
+    [SerializeField] private float level5TargetTimeSeconds = 0f; 
     [Header("Level Intro Instructions")]
     [SerializeField] private bool showInstructionPanel = true;
     [SerializeField] private string instructionPanelSceneName = "Level1Scene";
@@ -74,7 +98,6 @@ public class GameManager : MonoBehaviour
         "",
         "Collect maximum number of tokens and exit",
         "",
-        "Remember: Ember melts ice; Aqua extinguishes fire.",
         "Caution: Touch each other? lose a heart.",
         "Caution: Touch wrong obstacle? lose a heart.",
         "Work together but never collide!"
@@ -99,6 +122,25 @@ public class GameManager : MonoBehaviour
         "Keep collecting tokens and avoid hazards!"
     };
     [SerializeField] private string level3InstructionContinuePrompt = "Press Space to start";
+    [SerializeField] private string level4InstructionSceneName = "Level4Scene";
+    [SerializeField] private string[] level4InstructionLines = new[]
+    {
+        "<b>Level 4</b>",
+        "",
+        "Beware of the green wisp!",
+        "Touch the purple spiral together to activate Steam Mode.",
+        "Act fast—Steam Mode is timed!"
+    };
+    [SerializeField] private string level4InstructionContinuePrompt = "Press Space to start";
+    [SerializeField] private string level5InstructionSceneName = "Level5Scene";
+    [SerializeField] private string[] level5InstructionLines = new[]
+    {
+        "<b>Level 5</b>",
+        "",
+        "Use SPACE button to swap positions",
+        "Can only swap 3 times: choose wisely!"
+    };
+    [SerializeField] private string level5InstructionContinuePrompt = "Press Space to start";
     
     [Header("UI Sprites")]
     [Tooltip("Sprite for Ember's full heart (Red)")]
@@ -125,34 +167,112 @@ public class GameManager : MonoBehaviour
     [Tooltip("The size (Width, Height) for the token icons.")]
     [SerializeField] private Vector2 tokenIconSize = new Vector2(45f, 45f);
 
-    // --- MODIFICATION START ---
-    // This new variable controls the height of the top UI bar.
+    
+    
     [Header("UI Layout")]
     [Tooltip("The height (in reference pixels) of the top UI bar")]
     [SerializeField] private float topUiBarHeight = 160f;
+    [Tooltip("The maximum width (in reference pixels) of the top UI bar")]
+    [SerializeField] private float topUiBarWidth = 1320f;
     [Tooltip("The background color of the top UI bar")]
-    [SerializeField] private Color topUiBarColor = new Color(0.1f, 0.1f, 0.1f, 0.8f);
-    // --- MODIFICATION END ---
+    [SerializeField] private Color topUiBarColor = new Color(0f, 0f, 0f, 0f);
+    [Tooltip("Set true to disable the top UI bar (used for special scenes like Level 5)")]
+    [SerializeField] private bool disableTopUiBar = false;
+    
+    [Header("Swap Counter UI")]
+    [Tooltip("Optional container to allow manually positioning the Level 5 swap counter.")]
+    [SerializeField] private RectTransform swapCounterContainerOverride;
+    [Tooltip("Optional label used for the swap counter text when placing it manually.")]
+    [SerializeField] private TextMeshProUGUI swapCounterLabelOverride;
+
+    [Header("Theme Settings")]
+    [SerializeField] private TMP_FontAsset themeFont;
+    [SerializeField] private Sprite themeButtonSprite;
+    [SerializeField] private Sprite steamPopupSprite;
+    [SerializeField] private Color themeButtonNormalColor = Color.white;
+    [SerializeField] private Color themeButtonHighlightedColor = new Color(0.953f, 0.859f, 0.526f, 1f);
+    [SerializeField] private Color themeButtonPressedColor = new Color(0.784f, 0.784f, 0.784f, 1f);
+    [SerializeField] private Color themeButtonSelectedColor = new Color(0.961f, 0.961f, 0.961f, 1f);
+    [SerializeField] private Color themeButtonTextColor = new Color(0.2f, 0.2f, 0.2f, 1f); 
+
+    
+    public Sprite ThemeButtonSprite => themeButtonSprite;
+    public Color ThemeButtonNormalColor => themeButtonNormalColor;
+    public Color ThemeButtonHighlightedColor => themeButtonHighlightedColor;
+    public Color ThemeButtonPressedColor => themeButtonPressedColor;
+    public Color ThemeButtonSelectedColor => themeButtonSelectedColor;
+    public Color ThemeButtonTextColor => themeButtonTextColor;
+    
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        if (themeFont == null)
+        {
+            themeFont = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/TextMesh Pro/Fonts/UncialAntiqua-Regular SDF.asset");
+        }
+        if (themeButtonSprite == null)
+        {
+            themeButtonSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Images/button.png");
+        }
+        if (steamPopupSprite == null)
+        {
+            steamPopupSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Images/steammode.png");
+        }
+    }
+#endif
+    
 
     [Header("Audio")]
     [SerializeField] private AudioClip heartLossSfx;
     [SerializeField, Range(0f, 1f)] private float heartLossSfxVolume = 0.9f;
 
 
-    // Keeps a visible record of how many fire tokens the team has picked up.
+    
     public int fireTokensCollected = 0;
-    // Keeps a visible record of how many water tokens the team has picked up.
+    
     public int waterTokensCollected = 0;
 
     private static int s_totalFireTokensCollected;
     private static int s_totalWaterTokensCollected;
+    private static readonly Dictionary<string, int> s_levelScoreThresholds = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { "Level1Scene", 2100 },
+        { "Level2Scene", 5500 },
+        { "Level3Scene", 1200 },
+        { "Level4Scene", 1800 }
+    };
+    private static string s_pendingHeartBonusScene;
+    private static int s_pendingHeartBonusAmount;
 
+    private const float SteamTimerFallbackDuration = 10f;
+    private const float SteamTimerBounceFrequency = 5f;
+    private const float SteamTimerBounceAmplitude = 0.08f;
+    private const float SteamTimerFlashFrequency = 8f;
+    private const float SteamTimerFlashThreshold = 3f;
+    private const float SteamPopupDuration = 1.8f;
+    private static readonly Color SteamPopupImageColor = Color.white;
+    private static readonly Color SteamPopupTextColor = new Color(0.7f, 0.18f, 0.95f, 1f);
     private Canvas _hudCanvas;
+    private GameObject _steamTimerContainer;
+    private TextMeshProUGUI _steamTimerLabel;
+    private bool _steamTimerActive;
+    private float _steamTimerRemaining;
+    private GameObject _steamPopupContainer;
+    private Image _steamPopupImage;
+    private TextMeshProUGUI _steamPopupText;
+    private bool _steamPopupUsesText;
+    private Coroutine _steamPopupCoroutine;
+    private TextMeshProUGUI _swapCounterLabel;
+    private SwapCounterManualAnchor _swapCounterManualAnchor;
     
-    // --- MODIFICATION START ---
-    // We add a reference for the top UI bar's RectTransform.
+    
+    
     private RectTransform _topUiBar;
-    // --- MODIFICATION END ---
+    private RectTransform _topUiContentRoot;
+    private bool _topUiBarIsStretched;
+    private float _topUiHorizontalPadding;
+    private Vector2 _uiReferenceResolution = Vector2.zero;
+    
     private HeartLossAnimator _heartLossAnimator;
     
     private List<Image> _emberHeartImages = new List<Image>();
@@ -187,25 +307,30 @@ public class GameManager : MonoBehaviour
     private readonly List<CoopPlayerController> _players = new();
     private readonly HashSet<CoopPlayerController> _playersAtExit = new();
 
-    // analytics code
+    
     [Header("Analytics")]
     [SerializeField] private Analytics.LevelTimer levelTimer;
 
     private TextMeshProUGUI _statusLabel;
+    private Image _statusBackgroundImage;
+    private TMP_FontAsset _cachedUpperUiFont;
+    private TMP_FontAsset _cachedInstructionFont;
+    private TMP_FontAsset _cachedEndPanelFont;
     private bool _levelReady;
     private bool _gameActive;
     private bool _gameFinished;
+    public bool GameFinished => _gameFinished;
     private Coroutine _loadNextSceneRoutine;
     private GameObject _instructionPanel;
     private bool _waitingForInstructionAck;
     private bool _instructionPausedTime;
     private float _previousTimeScale = 1f;
     
-    // Scoring system fields
+    
     private bool _scoringTimerStarted;
     private float _scoringStartTime;
     
-    // Audio fields
+    
     private AudioClip _generatedHeartLossClip;
 
     public bool TryGetTokenCompletionSnapshot(out Analytics.TokenCompletionSnapshot snapshot)
@@ -224,6 +349,7 @@ public class GameManager : MonoBehaviour
 
     private void Awake()
     {
+        Instance = this;
         NormalizeDisplayStrings();
         if (!useVictoryPanel)
         {
@@ -231,8 +357,14 @@ public class GameManager : MonoBehaviour
             useVictoryPanel = true;
         }
         EnsureHudCanvas();
-        CreateHeartsUI();
-        CreateTokensUI();
+        if (!disableTopUiBar)
+        {
+            CreateTokensUI();
+            CreateHeartsUI();
+            CreateSteamTimerUI();
+            CreateSteamPopupUI();
+        }
+        CreateSwapCounterUI();
         CreateVictoryPanel();
 
         if (resetGlobalTokenTotalsOnLoad)
@@ -243,7 +375,7 @@ public class GameManager : MonoBehaviour
 
         if (!isTutorialMode)
         {
-            CreateStatusUI(); // This function is now modified
+            CreateStatusUI(); 
         }
         ResetTokenTracking();
         ResetHearts();
@@ -251,16 +383,17 @@ public class GameManager : MonoBehaviour
         EnsureLevelTimer();
         CreateInstructionPanelIfNeeded();
         
-        // Initialize scoring timer (will start when level actually begins)
+        
         _scoringTimerStarted = false;
         _scoringStartTime = 0f;
     }
 
-    // ... (Update, RegisterPlayer, OnLevelReady, TryStartLevel, etc. are UNCHANGED) ...
-    // ... (Scroll down to EnsureHudCanvas) ...
+    
+    
     
     private void Update()
     {
+        UpdateSteamTimer();
         UpdateTokenBreathing();
         if (_waitingForInstructionAck)
         {
@@ -272,15 +405,73 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        if (_gameFinished && Input.GetKeyDown(KeyCode.R))
-        {
-            CancelNextSceneLoad();
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-        }
+
 
         if (_gameActive && !_gameFinished && AreAllPlayersAtExit())
         {
             HandleVictory();
+        }
+    }
+
+    private void UpdateSteamTimer()
+    {
+        if (!_steamTimerActive)
+        {
+            return;
+        }
+
+        _steamTimerRemaining -= Time.unscaledDeltaTime;
+
+        if (_steamTimerRemaining <= 0f)
+        {
+            _steamTimerRemaining = 0f;
+            _steamTimerActive = false;
+            ShowSteamPopup("TIMES UP!");
+        }
+
+        UpdateSteamTimerLabel();
+        ApplySteamTimerEffects();
+
+        if (!_steamTimerActive && _steamTimerContainer != null)
+        {
+            _steamTimerContainer.transform.localScale = Vector3.one;
+            _steamTimerContainer.SetActive(false);
+        }
+    }
+
+    private void UpdateSteamTimerLabel()
+    {
+        if (_steamTimerLabel == null) return;
+        _steamTimerLabel.text = FormatSteamTimerText(_steamTimerRemaining);
+    }
+
+    private static string FormatSteamTimerText(float remaining)
+    {
+        remaining = Mathf.Max(0f, remaining);
+        int minutes = (int)(remaining / 60f);
+        int seconds = (int)(remaining % 60f);
+        float fractional = Mathf.Clamp01(remaining - minutes * 60f - seconds);
+        int hundredths = Mathf.Clamp(Mathf.FloorToInt(fractional * 100f), 0, 99);
+        return $"STEAM MODE:{minutes:00}:{seconds:00}:{hundredths:00}";
+    }
+
+    private void ApplySteamTimerEffects()
+    {
+        if (_steamTimerContainer == null || _steamTimerLabel == null) return;
+
+        float t = Time.unscaledTime;
+        float scaleOffset = Mathf.Sin(t * SteamTimerBounceFrequency) * SteamTimerBounceAmplitude;
+        _steamTimerContainer.transform.localScale = Vector3.one * (1f + scaleOffset);
+
+        float remaining = Mathf.Max(0f, _steamTimerRemaining);
+        if (_steamTimerActive && remaining <= SteamTimerFlashThreshold)
+        {
+            float flash = (Mathf.Sin(t * SteamTimerFlashFrequency) + 1f) * 0.5f;
+            _steamTimerLabel.color = Color.Lerp(Color.white, Color.red, flash);
+        }
+        else
+        {
+            _steamTimerLabel.color = Color.white;
         }
     }
 
@@ -321,7 +512,7 @@ public class GameManager : MonoBehaviour
         _gameFinished = false;
         _playersAtExit.Clear();
 
-        // Start the scoring timer when the level actually begins (separate from analytics timer)
+        
         _scoringStartTime = Time.realtimeSinceStartup;
         _scoringTimerStarted = true;
 
@@ -337,6 +528,42 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    
+
+    
+    
+    
+    private bool IsPlayerInSteamMode(CoopPlayerController player)
+    {
+        if (player == null) return false;
+
+        var steam = player.GetComponent<PlayerSteamState>();
+        return steam != null && steam.IsInSteamMode;
+    }
+
+    
+    
+    
+    private bool IsRoleInSteamMode(PlayerRole role)
+    {
+        foreach (var player in _players)
+        {
+            if (player == null) continue;
+            if (player.Role != role) continue;
+
+            var steam = player.GetComponent<PlayerSteamState>();
+            if (steam != null && steam.IsInSteamMode)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+
+
     public void OnPlayersTouched(CoopPlayerController playerA, CoopPlayerController playerB)
     {
         if (!_gameActive || _gameFinished) return;
@@ -348,6 +575,13 @@ public class GameManager : MonoBehaviour
             return;
         }
 
+        
+        if (IsPlayerInSteamMode(playerA) || IsPlayerInSteamMode(playerB))
+        {
+            Debug.Log("[GameManager] OnPlayersTouched: touch ignored because at least one player is in STEAM MODE.");
+            return;
+        }
+
         DamageBothPlayers(playerA, playerB);
         if (_gameFinished) return;
 
@@ -356,6 +590,8 @@ public class GameManager : MonoBehaviour
             UpdateStatus("Careful! Keep your distance.");
         }
     }
+
+
 
     public void OnPlayerEnteredExit(CoopPlayerController player)
     {
@@ -438,17 +674,169 @@ public class GameManager : MonoBehaviour
             _statusLabel.text = message;
         }
 
+        if (_statusBackgroundImage != null)
+        {
+            bool hasMessage = !string.IsNullOrWhiteSpace(message);
+            _statusBackgroundImage.gameObject.SetActive(hasMessage);
+        }
+
         Debug.Log(message);
     }
 
-    // --- MODIFICATION START ---
-    // This function is modified to parent the Status UI to the _topUiBar
-    // and anchor it to the top-center.
+    public TMP_FontAsset GetUpperUiFont()
+    {
+        
+        if (themeFont != null)
+        {
+            return themeFont;
+        }
+
+        if (_cachedUpperUiFont != null)
+        {
+            return _cachedUpperUiFont;
+        }
+
+        if (upperUiFont != null)
+        {
+            _cachedUpperUiFont = upperUiFont;
+            return _cachedUpperUiFont;
+        }
+
+        _cachedUpperUiFont = LoadUpperUiFontFromResources();
+
+        if (_cachedUpperUiFont == null && TMP_Settings.defaultFontAsset != null)
+        {
+            _cachedUpperUiFont = TMP_Settings.defaultFontAsset;
+        }
+
+        return _cachedUpperUiFont;
+    }
+
+    private TMP_FontAsset LoadUpperUiFontFromResources()
+    {
+        if (string.IsNullOrEmpty(UpperUiFontResourcePath))
+        {
+            return null;
+        }
+
+        return Resources.Load<TMP_FontAsset>(UpperUiFontResourcePath);
+    }
+
+    private TMP_FontAsset GetInstructionFont()
+    {
+        if (_cachedInstructionFont != null)
+        {
+            return _cachedInstructionFont;
+        }
+
+        if (instructionFont != null)
+        {
+            _cachedInstructionFont = instructionFont;
+            return _cachedInstructionFont;
+        }
+
+        _cachedInstructionFont = Resources.Load<TMP_FontAsset>(InstructionFontResourcePath);
+
+        if (_cachedInstructionFont == null && TMP_Settings.defaultFontAsset != null)
+        {
+            _cachedInstructionFont = TMP_Settings.defaultFontAsset;
+        }
+
+        return _cachedInstructionFont;
+    }
+
+    private TMP_FontAsset GetEndPanelFont()
+    {
+        if (_cachedEndPanelFont != null)
+        {
+            return _cachedEndPanelFont;
+        }
+
+        if (TMP_Settings.defaultFontAsset != null)
+        {
+            _cachedEndPanelFont = TMP_Settings.defaultFontAsset;
+            return _cachedEndPanelFont;
+        }
+
+        if (upperUiFont != null)
+        {
+            _cachedEndPanelFont = upperUiFont;
+            return _cachedEndPanelFont;
+        }
+
+        if (themeFont != null)
+        {
+            _cachedEndPanelFont = themeFont;
+        }
+
+        return _cachedEndPanelFont;
+    }
+
+    private void ApplyEndPanelFont(TextMeshProUGUI label)
+    {
+        if (label == null) return;
+
+        TMP_FontAsset fontAsset = GetEndPanelFont();
+        if (fontAsset != null)
+        {
+            label.font = fontAsset;
+        }
+    }
+
+    private void ApplyUpperUiFont(TextMeshProUGUI label)
+    {
+        if (label == null)
+        {
+            return;
+        }
+
+        var fontAsset = GetUpperUiFont();
+        if (fontAsset != null)
+        {
+            label.font = fontAsset;
+        }
+    }
+
+    private void ApplyInstructionFont(TextMeshProUGUI label)
+    {
+        if (label == null)
+        {
+            return;
+        }
+
+        var fontAsset = GetInstructionFont();
+        if (fontAsset != null)
+        {
+            label.font = fontAsset;
+        }
+    }
+
+    private bool IsCurrentSceneLevel5()
+    {
+        string currentScene = SceneManager.GetActiveScene().name;
+        if (string.IsNullOrEmpty(currentScene))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrEmpty(level5InstructionSceneName) &&
+            string.Equals(currentScene, level5InstructionSceneName, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return string.Equals(currentScene, "Level5Scene", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(currentScene, "Level5", StringComparison.OrdinalIgnoreCase);
+    }
+
+    
+    
+    
     private void CreateStatusUI()
     {
         if (_hudCanvas == null) return;
         
-        // This logic to create a second one is still here per your request
+        
         string backgroundName = "MessageBackground";
         if (_hudCanvas.transform.Find(backgroundName) != null)
         {
@@ -457,21 +845,29 @@ public class GameManager : MonoBehaviour
 
         GameObject background = new GameObject(backgroundName); 
         
-        // --- MODIFICATION: Parent to the Top UI Bar ---
-        background.transform.SetParent(_topUiBar, false);
+        Transform statusParent = _topUiBar != null ? _topUiBar : (_hudCanvas != null ? _hudCanvas.transform : null);
+        if (statusParent == null)
+        {
+            Debug.LogWarning("CreateStatusUI: Cannot find a parent transform for the status background.", this);
+            return;
+        }
+
+        background.transform.SetParent(statusParent, false);
 
         RectTransform bgRect = background.AddComponent<RectTransform>();
         
-        // --- MODIFICATION: Anchor to the Top-Center of the bar ---
-        bgRect.anchorMin = new Vector2(0.5f, 1f); // Top-Center
-        bgRect.anchorMax = new Vector2(0.5f, 1f); // Top-Center
+        
+        bgRect.anchorMin = new Vector2(0.5f, 1f); 
+        bgRect.anchorMax = new Vector2(0.5f, 1f); 
         bgRect.pivot = new Vector2(0.5f, 1f);
-        bgRect.sizeDelta = new Vector2(680f, 120f);
-        // Position it 40 pixels down from the top-center of the bar
-        bgRect.anchoredPosition = new Vector2(0f, -40f); 
+        bgRect.sizeDelta = new Vector2(1000f, 120f);
+        
+        bgRect.anchoredPosition = new Vector2(0f, -100f); 
 
         Image image = background.AddComponent<Image>();
         image.color = messageBackground;
+        _statusBackgroundImage = image;
+        image.gameObject.SetActive(false);
 
         GameObject textGO = new GameObject("StatusLabel");
         textGO.transform.SetParent(background.transform, false);
@@ -483,16 +879,17 @@ public class GameManager : MonoBehaviour
         textRect.offsetMax = new Vector2(-20f, -20f);
 
         _statusLabel = textGO.AddComponent<TextMeshProUGUI>();
+        ApplyEndPanelFont(_statusLabel);
         _statusLabel.alignment = TextAlignmentOptions.Center;
         _statusLabel.fontSize = 40f;
         _statusLabel.text = string.Empty;
+        _statusLabel.color = Color.white;
     }
-    // --- MODIFICATION END ---
+    
 
 
     private bool TryGetInstructionContentForScene(out string[] lines, out string prompt)
     {
-        // ... (This function is UNCHANGED) ...
         lines = null;
         prompt = instructionContinuePrompt;
 
@@ -522,6 +919,22 @@ public class GameManager : MonoBehaviour
                 ? instructionContinuePrompt
                 : level3InstructionContinuePrompt;
         }
+        else if (!string.IsNullOrEmpty(level4InstructionSceneName) &&
+                 currentScene == level4InstructionSceneName)
+        {
+            lines = level4InstructionLines;
+            prompt = string.IsNullOrEmpty(level4InstructionContinuePrompt)
+                ? instructionContinuePrompt
+                : level4InstructionContinuePrompt;
+        }
+        else if (!string.IsNullOrEmpty(level5InstructionSceneName) &&
+                 currentScene == level5InstructionSceneName)
+        {
+            lines = level5InstructionLines;
+            prompt = string.IsNullOrEmpty(level5InstructionContinuePrompt)
+                ? instructionContinuePrompt
+                : level5InstructionContinuePrompt;
+        }
         else if (string.IsNullOrEmpty(instructionPanelSceneName))
         {
             lines = instructionLines;
@@ -532,7 +945,6 @@ public class GameManager : MonoBehaviour
 
     private void CreateInstructionPanelIfNeeded()
     {
-        // ... (This function is UNCHANGED) ...
         if (_hudCanvas == null || _instructionPanel != null) return;
 
         if (!TryGetInstructionContentForScene(out var lines, out var prompt)) return;
@@ -556,11 +968,14 @@ public class GameManager : MonoBehaviour
         instructionsRect.anchorMin = new Vector2(0.5f, 0.5f);
         instructionsRect.anchorMax = new Vector2(0.5f, 0.5f);
         instructionsRect.pivot = new Vector2(0.5f, 0.5f);
-        instructionsRect.sizeDelta = new Vector2(1900f, 50f);
+        instructionsRect.sizeDelta = new Vector2(1900f, 180f);
+        instructionsRect.anchoredPosition = new Vector2(0f, 180f);
 
         TextMeshProUGUI instructionsLabel = instructionsGO.AddComponent<TextMeshProUGUI>();
+        
         instructionsLabel.alignment = TextAlignmentOptions.Center;
-        instructionsLabel.fontSize = 60f;
+        instructionsLabel.fontSize = 80f;
+        instructionsLabel.fontStyle = FontStyles.Bold;
         instructionsLabel.text = lines != null && lines.Length > 0
             ? string.Join("\n", lines)
             : string.Empty;
@@ -577,8 +992,10 @@ public class GameManager : MonoBehaviour
         promptRect.sizeDelta = new Vector2(700f, 80f);
 
         TextMeshProUGUI promptLabel = promptGO.AddComponent<TextMeshProUGUI>();
+        
         promptLabel.alignment = TextAlignmentOptions.Center;
         promptLabel.fontSize = 36f;
+        promptLabel.fontStyle = FontStyles.Bold;
         promptLabel.text = string.IsNullOrEmpty(prompt)
             ? "Press Space to start"
             : prompt;
@@ -598,7 +1015,7 @@ public class GameManager : MonoBehaviour
 
     private void DismissInstructionPanel()
     {
-        // ... (This function is UNCHANGED) ...
+        
         _waitingForInstructionAck = false;
 
         if (_instructionPanel != null)
@@ -616,7 +1033,7 @@ public class GameManager : MonoBehaviour
 
     private void RestoreTimeScaleIfNeeded()
     {
-        // ... (This function is UNCHANGED) ...
+        
         if (_instructionPausedTime)
         {
             Time.timeScale = _previousTimeScale;
@@ -624,8 +1041,17 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // --- MODIFICATION START ---
-    // This function is modified to create the _topUiBar.
+    
+    
+    
+    
+    public bool IsWaitingForInstructionAck()
+    {
+        return _waitingForInstructionAck;
+    }
+
+    
+    
     private void EnsureHudCanvas()
     {
         if (_hudCanvas != null) return;
@@ -639,32 +1065,68 @@ public class GameManager : MonoBehaviour
 
         CanvasScaler scaler = canvasGO.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
+        Vector2 referenceResolution = new Vector2(1920, 1080);
+        scaler.referenceResolution = referenceResolution;
+        _uiReferenceResolution = referenceResolution;
         scaler.matchWidthOrHeight = 0.5f;
 
         canvasGO.AddComponent<GraphicRaycaster>();
 
         EnsureEventSystemExists();
+
+        if (disableTopUiBar)
+        {
+            _topUiBar = null;
+            _topUiContentRoot = null;
+            _topUiBarIsStretched = false;
+            _topUiHorizontalPadding = 0f;
+            return;
+        }
         
-        // --- NEW: Create the Top UI Bar ---
+        
         GameObject topBarGO = new GameObject("TopUI_Bar_Background");
-        topBarGO.transform.SetParent(canvasGO.transform, false); // Parent to the Canvas
+        topBarGO.transform.SetParent(canvasGO.transform, false); 
         Image topBarImg = topBarGO.AddComponent<Image>();
-        topBarImg.color = topUiBarColor; // Use the new color variable
+        topBarImg.color = topUiBarColor; 
 
         _topUiBar = topBarGO.GetComponent<RectTransform>();
         
-        // Anchor it to the top edge and stretch 100% wide
-        _topUiBar.anchorMin = new Vector2(0f, 1f); 
-        _topUiBar.anchorMax = new Vector2(1f, 1f); 
-        _topUiBar.pivot = new Vector2(0.5f, 1f);
+        bool stretchBar = topUiBarWidth <= 0f;
+        _topUiBarIsStretched = stretchBar;
+        if (stretchBar)
+        {
+            
+            _topUiBar.anchorMin = new Vector2(0f, 1f);
+            _topUiBar.anchorMax = new Vector2(1f, 1f);
+            _topUiBar.pivot = new Vector2(0.5f, 1f);
+            _topUiBar.sizeDelta = new Vector2(0f, topUiBarHeight);
+            _topUiHorizontalPadding = 0f;
+        }
+        else
+        {
+            
+            _topUiBar.anchorMin = new Vector2(0.5f, 1f); 
+            _topUiBar.anchorMax = new Vector2(0.5f, 1f); 
+            _topUiBar.pivot = new Vector2(0.5f, 1f);
+            float clampedBarWidth = Mathf.Max(400f, topUiBarWidth);
+            _topUiBar.sizeDelta = new Vector2(clampedBarWidth, topUiBarHeight);
+            float referenceWidth = _uiReferenceResolution.x <= 0f ? clampedBarWidth : _uiReferenceResolution.x;
+            _topUiHorizontalPadding = Mathf.Max(0f, (referenceWidth - clampedBarWidth) * 0.5f);
+        }
+        _topUiBar.anchoredPosition = Vector2.zero; 
+
         
-        // Set its height using the new variable
-        _topUiBar.sizeDelta = new Vector2(0f, topUiBarHeight); // 0f for width = 100% stretch
-        _topUiBar.anchoredPosition = Vector2.zero; // Position at the top
-        // --- END NEW ---
+        GameObject topUiContent = new GameObject("TopUIContent");
+        topUiContent.transform.SetParent(topBarGO.transform, false);
+        _topUiContentRoot = topUiContent.AddComponent<RectTransform>();
+        _topUiContentRoot.anchorMin = Vector2.zero;
+        _topUiContentRoot.anchorMax = Vector2.one;
+        _topUiContentRoot.offsetMin = new Vector2(40f, 20f);
+        _topUiContentRoot.offsetMax = new Vector2(-40f, -20f);
+
+        
     }
-    // --- MODIFICATION END ---
+    
 
     private void EnsureEventSystemExists()
     {
@@ -676,61 +1138,79 @@ public class GameManager : MonoBehaviour
         DontDestroyOnLoad(eventSystemGO);
     }
 
-    // --- MODIFICATION START ---
-    // This function is modified to parent the HeartsMasterContainer to the _topUiBar
-    // and anchor it to the top-right *of the bar*.
+    
+    
     private void CreateHeartsUI()
     {
         if (_hudCanvas == null) return;
         
-        // --- 1. Create the Master Container for all "Life" UI ---
-        GameObject heartsMasterContainer = new GameObject("HeartsMasterContainer");
         
-        // --- MODIFICATION: Parent to the Top UI Bar ---
-        heartsMasterContainer.transform.SetParent(_topUiBar, false);
+        GameObject heartsMasterContainer = new GameObject("HeartsMasterContainer", typeof(RectTransform));
+        
+        
+        var heartsParent = _topUiContentRoot != null ? _topUiContentRoot : _topUiBar;
+        heartsMasterContainer.transform.SetParent(heartsParent, false);
 
-        VerticalLayoutGroup masterLayout = heartsMasterContainer.AddComponent<VerticalLayoutGroup>();
-        masterLayout.spacing = 10;
-        masterLayout.childAlignment = TextAnchor.UpperRight;
+        RectTransform masterRect = heartsMasterContainer.GetComponent<RectTransform>();
+        masterRect.anchorMin = new Vector2(1f, 0.5f); 
+        masterRect.anchorMax = new Vector2(1f, 0.5f);
+        masterRect.pivot = new Vector2(1f, 0.5f);
+        float heartsScreenInset = _topUiBarIsStretched ? 0f : 40f;
+        float heartsHorizontalShift = Mathf.Max(0f, _topUiHorizontalPadding - heartsScreenInset);
+        masterRect.anchoredPosition = new Vector2(heartsHorizontalShift, 0f); 
+        masterRect.sizeDelta = new Vector2(360f, 200f); 
+
+        HorizontalLayoutGroup masterLayout = heartsMasterContainer.AddComponent<HorizontalLayoutGroup>();
+        masterLayout.spacing = 16f;
+        masterLayout.childAlignment = TextAnchor.MiddleRight;
         masterLayout.childControlWidth = false;
         masterLayout.childControlHeight = false;
+        masterLayout.childForceExpandWidth = false;
+        masterLayout.childForceExpandHeight = false;
         
         ContentSizeFitter masterFitter = heartsMasterContainer.AddComponent<ContentSizeFitter>();
         masterFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-        RectTransform masterRect = heartsMasterContainer.GetComponent<RectTransform>();
+        masterFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
         
-        // --- MODIFICATION: Anchor to the top-right *of the bar* ---
-        masterRect.anchorMin = new Vector2(1f, 1f); 
-        masterRect.anchorMax = new Vector2(1f, 1f);
-        masterRect.pivot = new Vector2(1f, 1f);
-        // Position it 40px in from the top-right corner of the bar
-        masterRect.anchoredPosition = new Vector2(-40f, -40f); 
-        masterRect.sizeDelta = new Vector2(360f, 200f); 
-
-        // --- 2. Create the "Life" Title ---
-        GameObject titleLabelGO = new GameObject("TitleLabel");
-        titleLabelGO.transform.SetParent(heartsMasterContainer.transform, false);
-        TextMeshProUGUI titleLabel = titleLabelGO.AddComponent<TextMeshProUGUI>();
-        titleLabel.text = "Life";
-        titleLabel.fontSize = 42f;
-        titleLabel.fontStyle = FontStyles.Bold;
-        titleLabel.color = Color.white;
-        titleLabel.alignment = TextAlignmentOptions.Right;
-
-        LayoutElement titleLayout = titleLabelGO.AddComponent<LayoutElement>();
-        titleLayout.preferredWidth = 360f; 
         
-        // --- 3. Create Hearts Container for Ember ---
+        GameObject heartsTitleGO = new GameObject("TitleLabel");
+        heartsTitleGO.transform.SetParent(heartsMasterContainer.transform, false);
+        TextMeshProUGUI heartsTitle = heartsTitleGO.AddComponent<TextMeshProUGUI>();
+        ApplyUpperUiFont(heartsTitle);
+        heartsTitle.text = "Lives";
+        heartsTitle.fontSize = 42f;
+        
+        heartsTitle.color = Color.white;
+        heartsTitle.alignment = TextAlignmentOptions.Right;
+        LayoutElement heartsTitleLayout = heartsTitleGO.AddComponent<LayoutElement>();
+        heartsTitleLayout.preferredWidth = 140f;
+        
+        
+        GameObject heartsContentGO = new GameObject("HeartsContent");
+        heartsContentGO.transform.SetParent(heartsMasterContainer.transform, false);
+        RectTransform heartsContentRect = heartsContentGO.AddComponent<RectTransform>();
+        heartsContentRect.sizeDelta = new Vector2(360f, 200f);
+        VerticalLayoutGroup heartsContentLayout = heartsContentGO.AddComponent<VerticalLayoutGroup>();
+        heartsContentLayout.spacing = 10f;
+        heartsContentLayout.childAlignment = TextAnchor.MiddleCenter;
+        heartsContentLayout.childControlWidth = false;
+        heartsContentLayout.childControlHeight = false;
+        heartsContentLayout.childForceExpandWidth = false;
+        heartsContentLayout.childForceExpandHeight = false;
+        ContentSizeFitter heartsContentFitter = heartsContentGO.AddComponent<ContentSizeFitter>();
+        heartsContentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        heartsContentFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        
         GameObject emberHeartsGO = new GameObject("EmberHeartsContainer");
-        emberHeartsGO.transform.SetParent(heartsMasterContainer.transform, false); 
+        emberHeartsGO.transform.SetParent(heartsContentGO.transform, false); 
         
         Image emberBg = emberHeartsGO.AddComponent<Image>();
         emberBg.color = new Color(0f, 0f, 0f, 0.35f); 
         
         HorizontalLayoutGroup emberLayout = emberHeartsGO.AddComponent<HorizontalLayoutGroup>();
         emberLayout.spacing = 10; 
-        emberLayout.childAlignment = TextAnchor.MiddleRight;
+        emberLayout.childAlignment = TextAnchor.MiddleCenter;
         emberLayout.childControlWidth = false;
         emberLayout.childControlHeight = false;
         emberLayout.padding = new RectOffset(10, 10, 5, 5); 
@@ -742,6 +1222,7 @@ public class GameManager : MonoBehaviour
         GameObject emberLabelGO = new GameObject("Label");
         emberLabelGO.transform.SetParent(emberHeartsGO.transform, false); 
         TextMeshProUGUI emberLabel = emberLabelGO.AddComponent<TextMeshProUGUI>();
+        ApplyUpperUiFont(emberLabel);
         emberLabel.text = "Ember:";
         emberLabel.fontSize = 40f;
         emberLabel.color = Color.white;
@@ -750,7 +1231,7 @@ public class GameManager : MonoBehaviour
         emberLabelLayout.preferredWidth = 160f; 
 
         _emberHeartImages.Clear();
-        for (int i = 0; i < startingHearts; i++)
+        for (int i = 0; i < startingHearts + MaxBonusHeartReward; i++)
         {
             GameObject heartImgGO = new GameObject($"Heart_{i}");
             heartImgGO.transform.SetParent(emberHeartsGO.transform, false);
@@ -764,16 +1245,16 @@ public class GameManager : MonoBehaviour
             _emberHeartImages.Add(heartImg);
         }
 
-        // --- 4. Create Hearts Container for Aqua ---
+        
         GameObject aquaHeartsGO = new GameObject("AquaHeartsContainer");
-        aquaHeartsGO.transform.SetParent(heartsMasterContainer.transform, false); 
+        aquaHeartsGO.transform.SetParent(heartsContentGO.transform, false); 
 
         Image aquaBg = aquaHeartsGO.AddComponent<Image>();
         aquaBg.color = new Color(0f, 0f, 0f, 0.35f); 
         
         HorizontalLayoutGroup aquaLayout = aquaHeartsGO.AddComponent<HorizontalLayoutGroup>();
         aquaLayout.spacing = 10;
-        aquaLayout.childAlignment = TextAnchor.MiddleRight;
+        aquaLayout.childAlignment = TextAnchor.MiddleCenter;
         aquaLayout.childControlWidth = false;
         aquaLayout.childControlHeight = false;
         aquaLayout.padding = new RectOffset(10, 10, 5, 5); 
@@ -784,6 +1265,7 @@ public class GameManager : MonoBehaviour
         GameObject aquaLabelGO = new GameObject("Label");
         aquaLabelGO.transform.SetParent(aquaHeartsGO.transform, false); 
         TextMeshProUGUI aquaLabel = aquaLabelGO.AddComponent<TextMeshProUGUI>();
+        ApplyUpperUiFont(aquaLabel);
         aquaLabel.text = "Aqua:";
         aquaLabel.fontSize = 40f;
         aquaLabel.color = Color.white;
@@ -792,7 +1274,7 @@ public class GameManager : MonoBehaviour
         aquaLabelLayout.preferredWidth = 160f; 
 
         _aquaHeartImages.Clear();
-        for (int i = 0; i < startingHearts; i++)
+        for (int i = 0; i < startingHearts + MaxBonusHeartReward; i++)
         {
             GameObject heartImgGO = new GameObject($"Heart_{i}");
             heartImgGO.transform.SetParent(aquaHeartsGO.transform, false);
@@ -818,64 +1300,80 @@ public class GameManager : MonoBehaviour
         _heartLossAnimator.ConfigureAudio(GetHeartLossClip(), heartLossAudioSource, heartLossSfxVolume);
         _heartLossAnimator.HeartAnimationFinished += UpdateHeartsUI;
     }
-    // --- MODIFICATION END ---
     
-    // --- MODIFICATION START ---
-    // This function is modified to parent the TokensMasterContainer to the _topUiBar
-    // and anchor it to the top-left *of the bar*.
+    
+    
+    
     private void CreateTokensUI()
     {
         if (_hudCanvas == null) return;
         
-        // --- 1. Create the Master Container for all "Collect" UI ---
-        GameObject tokensMasterContainer = new GameObject("TokensMasterContainer");
         
-        // --- MODIFICATION: Parent to the Top UI Bar ---
-        tokensMasterContainer.transform.SetParent(_topUiBar, false);
+        GameObject tokensMasterContainer = new GameObject("TokensMasterContainer", typeof(RectTransform));
+        
+        
+        var tokensParent = _topUiContentRoot != null ? _topUiContentRoot : _topUiBar;
+        tokensMasterContainer.transform.SetParent(tokensParent, false);
 
-        VerticalLayoutGroup masterLayout = tokensMasterContainer.AddComponent<VerticalLayoutGroup>();
-        masterLayout.spacing = 10;
-        masterLayout.childAlignment = TextAnchor.UpperLeft;
+        RectTransform masterRect = tokensMasterContainer.GetComponent<RectTransform>();
+        masterRect.anchorMin = new Vector2(0f, 0.5f); 
+        masterRect.anchorMax = new Vector2(0f, 0.5f);
+        masterRect.pivot = new Vector2(0f, 0.5f);
+        float tokensScreenInset = _topUiBarIsStretched ? 0f : 40f;
+        float tokensHorizontalShift = Mathf.Min(0f, tokensScreenInset - _topUiHorizontalPadding);
+        masterRect.anchoredPosition = new Vector2(tokensHorizontalShift, 0f);
+        masterRect.sizeDelta = new Vector2(520f, 200f); 
+
+        HorizontalLayoutGroup masterLayout = tokensMasterContainer.AddComponent<HorizontalLayoutGroup>();
+        masterLayout.spacing = 16f;
+        masterLayout.childAlignment = TextAnchor.MiddleLeft;
         masterLayout.childControlWidth = false;
         masterLayout.childControlHeight = false;
+        masterLayout.childForceExpandWidth = false;
+        masterLayout.childForceExpandHeight = false;
         
         ContentSizeFitter masterFitter = tokensMasterContainer.AddComponent<ContentSizeFitter>();
         masterFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        masterFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize; // Let it wrap width
+        masterFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize; 
 
-        RectTransform masterRect = tokensMasterContainer.GetComponent<RectTransform>();
         
-        // --- MODIFICATION: Anchor to the top-left *of the bar* ---
-        masterRect.anchorMin = new Vector2(0f, 1f); 
-        masterRect.anchorMax = new Vector2(0f, 1f);
-        masterRect.pivot = new Vector2(0f, 1f);
-        // Position it 40px in from the top-left corner of the bar
-        masterRect.anchoredPosition = new Vector2(40f, -40f);
-        masterRect.sizeDelta = new Vector2(520f, 200f); 
-
-        // --- 2. Create the "Collect" Title ---
-        GameObject titleLabelGO = new GameObject("TitleLabel");
-        titleLabelGO.transform.SetParent(tokensMasterContainer.transform, false); 
-        TextMeshProUGUI titleLabel = titleLabelGO.AddComponent<TextMeshProUGUI>();
-        titleLabel.text = "Collect";
-        titleLabel.fontSize = 42f;
-        titleLabel.fontStyle = FontStyles.Bold;
-        titleLabel.color = Color.white;
-        titleLabel.alignment = TextAlignmentOptions.Left;
-
-        LayoutElement titleLayout = titleLabelGO.AddComponent<LayoutElement>();
-        titleLayout.preferredWidth = 520f;
+        GameObject tokensTitleGO = new GameObject("TitleLabel");
+        tokensTitleGO.transform.SetParent(tokensMasterContainer.transform, false);
+        TextMeshProUGUI tokensTitle = tokensTitleGO.AddComponent<TextMeshProUGUI>();
+        ApplyUpperUiFont(tokensTitle);
+        tokensTitle.text = "Collect";
+        tokensTitle.fontSize = 42f;
         
-        // --- 3. Create Token Container for Ember ---
+        tokensTitle.color = Color.white;
+        tokensTitle.alignment = TextAlignmentOptions.Left;
+        LayoutElement tokensTitleLayout = tokensTitleGO.AddComponent<LayoutElement>();
+        tokensTitleLayout.preferredWidth = 150f;
+        
+        GameObject tokensContentGO = new GameObject("TokensContent");
+        tokensContentGO.transform.SetParent(tokensMasterContainer.transform, false);
+        RectTransform tokensContentRect = tokensContentGO.AddComponent<RectTransform>();
+        tokensContentRect.sizeDelta = new Vector2(520f, 200f);
+        VerticalLayoutGroup tokensContentLayout = tokensContentGO.AddComponent<VerticalLayoutGroup>();
+        tokensContentLayout.spacing = 10f;
+        tokensContentLayout.childAlignment = TextAnchor.MiddleLeft;
+        tokensContentLayout.childControlWidth = false;
+        tokensContentLayout.childControlHeight = false;
+        tokensContentLayout.childForceExpandWidth = false;
+        tokensContentLayout.childForceExpandHeight = false;
+        ContentSizeFitter tokensContentFitter = tokensContentGO.AddComponent<ContentSizeFitter>();
+        tokensContentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        tokensContentFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        
         GameObject emberTokensGO = new GameObject("EmberTokensContainer");
-        emberTokensGO.transform.SetParent(tokensMasterContainer.transform, false); 
+        emberTokensGO.transform.SetParent(tokensContentGO.transform, false); 
         
         Image emberBg = emberTokensGO.AddComponent<Image>();
         emberBg.color = new Color(0f, 0f, 0f, 0.35f); 
         
         HorizontalLayoutGroup emberLayout = emberTokensGO.AddComponent<HorizontalLayoutGroup>();
         emberLayout.spacing = 10; 
-        emberLayout.childAlignment = TextAnchor.MiddleLeft; 
+        emberLayout.childAlignment = TextAnchor.MiddleCenter; 
         emberLayout.childControlWidth = false;
         emberLayout.childControlHeight = false;
         emberLayout.padding = new RectOffset(10, 10, 5, 5); 
@@ -884,13 +1382,14 @@ public class GameManager : MonoBehaviour
         float tokenContainerHeight = tokenIconSize.y + emberLayout.padding.top + emberLayout.padding.bottom;
         emberRect.sizeDelta = new Vector2(520f, tokenContainerHeight); 
         
-        // --- MODIFICATION: Add Content Size Fitter ---
+        
         ContentSizeFitter emberFitter = emberTokensGO.AddComponent<ContentSizeFitter>();
-        emberFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize; // Make it wrap content
+        emberFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize; 
 
         GameObject emberLabelGO = new GameObject("Label");
         emberLabelGO.transform.SetParent(emberTokensGO.transform, false); 
         TextMeshProUGUI emberLabel = emberLabelGO.AddComponent<TextMeshProUGUI>();
+        ApplyUpperUiFont(emberLabel);
         emberLabel.text = "Fire:";
         emberLabel.fontSize = 40f;
         emberLabel.color = Color.white;
@@ -898,16 +1397,16 @@ public class GameManager : MonoBehaviour
         LayoutElement emberLabelLayout = emberLabelGO.AddComponent<LayoutElement>();
         emberLabelLayout.preferredWidth = 130f; 
 
-        // --- 4. Create Token Container for Aqua ---
+        
         GameObject aquaTokensGO = new GameObject("AquaTokensContainer");
-        aquaTokensGO.transform.SetParent(tokensMasterContainer.transform, false); 
+        aquaTokensGO.transform.SetParent(tokensContentGO.transform, false); 
         
         Image aquaBg = aquaTokensGO.AddComponent<Image>();
         aquaBg.color = new Color(0f, 0f, 0f, 0.35f); 
         
         HorizontalLayoutGroup aquaLayout = aquaTokensGO.AddComponent<HorizontalLayoutGroup>();
         aquaLayout.spacing = 10;
-        aquaLayout.childAlignment = TextAnchor.MiddleLeft; 
+        aquaLayout.childAlignment = TextAnchor.MiddleCenter; 
         aquaLayout.childControlWidth = false;
         aquaLayout.childControlHeight = false;
         aquaLayout.padding = new RectOffset(10, 10, 5, 5); 
@@ -915,13 +1414,14 @@ public class GameManager : MonoBehaviour
         RectTransform aquaRect = aquaTokensGO.GetComponent<RectTransform>();
         aquaRect.sizeDelta = new Vector2(520f, tokenContainerHeight);
         
-        // --- MODIFICATION: Add Content Size Fitter ---
+        
         ContentSizeFitter aquaFitter = aquaTokensGO.AddComponent<ContentSizeFitter>();
-        aquaFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize; // Make it wrap content
+        aquaFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize; 
 
         GameObject aquaLabelGO = new GameObject("Label");
         aquaLabelGO.transform.SetParent(aquaTokensGO.transform, false); 
         TextMeshProUGUI aquaLabel = aquaLabelGO.AddComponent<TextMeshProUGUI>();
+        ApplyUpperUiFont(aquaLabel);
         aquaLabel.text = "Water:";
         aquaLabel.fontSize = 40f;
         aquaLabel.color = Color.white;
@@ -931,11 +1431,398 @@ public class GameManager : MonoBehaviour
 
         UpdateTokensUI();
     }
-    // --- MODIFICATION END ---
+    
+
+    private void CreateSteamTimerUI()
+    {
+        if (_hudCanvas == null || _topUiContentRoot == null) return;
+
+        GameObject timerContainer = new GameObject("SteamTimerContainer");
+        timerContainer.transform.SetParent(_topUiContentRoot, false);
+
+        RectTransform rect = timerContainer.AddComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        
+        rect.sizeDelta = new Vector2(400f, 100f);
+        rect.anchoredPosition = Vector2.zero;
+        if (IsCurrentSceneLevel5())
+        {
+            rect.anchoredPosition = new Vector2(160f, 0f);
+        }
+
+        Image background = timerContainer.AddComponent<Image>();
+        background.color = new Color(0f, 0f, 0f, 0.45f);
+        background.raycastTarget = false;
+
+        GameObject labelGO = new GameObject("SteamTimerLabel");
+        labelGO.transform.SetParent(timerContainer.transform, false);
+
+        RectTransform labelRect = labelGO.AddComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = Vector2.zero;
+        labelRect.offsetMax = Vector2.zero;
+        labelRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 840f);
+        labelRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 220f);
+
+        _steamTimerLabel = labelGO.AddComponent<TextMeshProUGUI>();
+        ApplyEndPanelFont(_steamTimerLabel);
+        _steamTimerLabel.alignment = TextAlignmentOptions.Center;
+        _steamTimerLabel.fontSize = 34f;
+        _steamTimerLabel.fontStyle = FontStyles.Bold;
+        _steamTimerLabel.color = Color.white;
+        _steamTimerLabel.raycastTarget = false;
+        UpdateSteamTimerLabel();
+
+        _steamTimerContainer = timerContainer;
+        _steamTimerContainer.SetActive(false);
+    }
+
+    public void StartSteamCountdown(float duration)
+    {
+        if (_steamTimerContainer == null || _steamTimerLabel == null) return;
+
+        if (duration <= 0f)
+        {
+            duration = SteamTimerFallbackDuration;
+        }
+
+        _steamTimerRemaining = duration;
+        _steamTimerActive = true;
+
+        _steamTimerContainer.SetActive(true);
+        UpdateSteamTimerLabel();
+        ShowSteamPopup("STEAM\nMODE!");
+    }
+
+    private void CreateSteamPopupUI()
+    {
+        if (_hudCanvas == null) return;
+
+        GameObject popup = new GameObject("SteamPopupContainer");
+        popup.transform.SetParent(_hudCanvas.transform, false);
+        popup.transform.SetAsLastSibling();
+
+        var rect = popup.AddComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        float refWidth = _uiReferenceResolution.x > 0f ? _uiReferenceResolution.x : Screen.width;
+        float refHeight = _uiReferenceResolution.y > 0f ? _uiReferenceResolution.y : Screen.height;
+        float popupWidth = Mathf.Max(1f, refWidth * 0.5f);
+        float popupHeight = Mathf.Max(1f, refHeight * 0.5f);
+        rect.sizeDelta = new Vector2(popupWidth, popupHeight);
+        bool isLevel5 = IsCurrentSceneLevel5();
+        rect.anchoredPosition = Vector2.zero;
+
+        _steamPopupContainer = popup;
+        _steamPopupContainer.SetActive(false);
+
+        GameObject labelGO = new GameObject("SteamPopupLabel");
+        labelGO.transform.SetParent(popup.transform, false);
+
+        var labelRect = labelGO.AddComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = Vector2.zero;
+        labelRect.offsetMax = Vector2.zero;
+        labelRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, rect.sizeDelta.x);
+        labelRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, rect.sizeDelta.y);
+
+        _steamPopupImage = labelGO.AddComponent<Image>();
+        _steamPopupImage.type = Image.Type.Simple;
+        _steamPopupImage.preserveAspect = true;
+        if (steamPopupSprite != null)
+        {
+            _steamPopupImage.sprite = steamPopupSprite;
+        }
+        else
+        {
+            Debug.LogWarning("[GameManager] Steam mode popup sprite is missing; add Assets/Images/steammode.png to the inspector.", this);
+        }
+        _steamPopupImage.color = SteamPopupImageColor;
+        _steamPopupImage.raycastTarget = false;
+
+        GameObject textGO = new GameObject("SteamPopupText");
+        textGO.transform.SetParent(popup.transform, false);
+        var textRect = textGO.AddComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.offsetMin = Vector2.zero;
+        textRect.offsetMax = Vector2.zero;
+        textRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, rect.sizeDelta.x);
+        textRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, rect.sizeDelta.y);
+
+        _steamPopupText = textGO.AddComponent<TextMeshProUGUI>();
+        ApplyEndPanelFont(_steamPopupText);
+        _steamPopupText.alignment = TextAlignmentOptions.Center;
+        _steamPopupText.fontSize = 110f;
+        _steamPopupText.fontStyle = FontStyles.Bold;
+        _steamPopupText.color = SteamPopupTextColor;
+        _steamPopupText.raycastTarget = false;
+        _steamPopupText.gameObject.SetActive(false);
+    }
+
+    private void CreateSwapCounterUI()
+    {
+        _swapCounterLabel = null;
+
+        bool isLevel5 = IsCurrentSceneLevel5();
+        if (!isLevel5)
+        {
+            if (swapCounterContainerOverride != null)
+            {
+                swapCounterContainerOverride.gameObject.SetActive(false);
+            }
+            return;
+        }
+
+        TextMeshProUGUI manualLabel = swapCounterLabelOverride;
+        RectTransform manualContainer = swapCounterContainerOverride;
+        if (isLevel5 && (manualLabel == null || manualContainer == null))
+        {
+            SwapCounterManualAnchor anchor = ResolveSwapCounterManualAnchor();
+            if (anchor != null)
+            {
+                if (manualContainer == null)
+                {
+                    manualContainer = anchor.Container;
+                    swapCounterContainerOverride = manualContainer;
+                }
+
+                if (manualLabel == null)
+                {
+                    manualLabel = anchor.Label;
+                    swapCounterLabelOverride = manualLabel;
+                }
+            }
+        }
+
+        if (manualLabel == null && manualContainer != null)
+        {
+            manualLabel = manualContainer.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (manualLabel != null)
+            {
+                swapCounterLabelOverride = manualLabel;
+            }
+        }
+
+        if (manualLabel != null)
+        {
+            _swapCounterLabel = manualLabel;
+            ApplyUpperUiFont(_swapCounterLabel);
+            _swapCounterLabel.text = string.Empty;
+            _swapCounterLabel.raycastTarget = false;
+
+            if (_hudCanvas != null && manualContainer != null)
+            {
+                Transform targetParent = _hudCanvas.transform;
+                manualContainer.SetParent(targetParent, false);
+                manualContainer.SetAsLastSibling();
+            }
+
+            if (manualContainer != null)
+            {
+                manualContainer.gameObject.SetActive(true);
+            }
+            else
+            {
+                _swapCounterLabel.gameObject.SetActive(true);
+            }
+
+            return;
+        }
+
+        if (_hudCanvas == null)
+        {
+            return;
+        }
+
+        Transform parent = _topUiContentRoot != null
+            ? _topUiContentRoot
+            : (_topUiBar != null ? _topUiBar : _hudCanvas.transform);
+        if (parent == null)
+        {
+            return;
+        }
+
+        GameObject swapContainer = new GameObject("SwapCounterContainer");
+        swapContainer.transform.SetParent(parent, false);
+
+        RectTransform rect = swapContainer.AddComponent<RectTransform>();
+        bool parentIsCanvas = parent == _hudCanvas.transform;
+        if (parentIsCanvas)
+        {
+            rect.anchorMin = new Vector2(0.5f, 1f);
+            rect.anchorMax = new Vector2(0.5f, 1f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.anchoredPosition = new Vector2(0f, -20f);
+        }
+        else
+        {
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
+        }
+
+        rect.sizeDelta = new Vector2(360f, 110f);
+
+        Image bg = swapContainer.AddComponent<Image>();
+        bg.color = new Color(0f, 0f, 0f, 0.35f);
+        bg.raycastTarget = false;
+
+        GameObject labelGO = new GameObject("SwapCounterLabel");
+        labelGO.transform.SetParent(swapContainer.transform, false);
+
+        RectTransform labelRect = labelGO.AddComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = new Vector2(15f, 15f);
+        labelRect.offsetMax = new Vector2(-15f, -15f);
+
+        _swapCounterLabel = labelGO.AddComponent<TextMeshProUGUI>();
+        ApplyUpperUiFont(_swapCounterLabel);
+        _swapCounterLabel.alignment = TextAlignmentOptions.Center;
+        _swapCounterLabel.fontSize = 44f;
+        _swapCounterLabel.color = Color.white;
+        _swapCounterLabel.text = string.Empty;
+        _swapCounterLabel.raycastTarget = false;
+    }
+
+    private SwapCounterManualAnchor ResolveSwapCounterManualAnchor()
+    {
+        if (_swapCounterManualAnchor != null)
+        {
+            return _swapCounterManualAnchor;
+        }
+
+        SwapCounterManualAnchor[] anchors = Resources.FindObjectsOfTypeAll<SwapCounterManualAnchor>();
+        foreach (var anchor in anchors)
+        {
+            if (anchor == null)
+            {
+                continue;
+            }
+
+            if (!anchor.gameObject.scene.IsValid())
+            {
+                continue; 
+            }
+
+            _swapCounterManualAnchor = anchor;
+            break;
+        }
+
+        return _swapCounterManualAnchor;
+    }
+
+    public void UpdateSwapCounterDisplay(int remainingSwaps, int maxSwaps)
+    {
+        if (_swapCounterLabel == null)
+        {
+            return;
+        }
+
+        maxSwaps = Mathf.Max(0, maxSwaps);
+        remainingSwaps = Mathf.Clamp(remainingSwaps, 0, maxSwaps);
+
+        if (maxSwaps <= 0)
+        {
+            _swapCounterLabel.text = "Swaps Disabled";
+            return;
+        }
+
+        if (remainingSwaps <= 0)
+        {
+            _swapCounterLabel.text = "No Swaps Remaining";
+        }
+        else if (remainingSwaps == 1)
+        {
+            _swapCounterLabel.text = "1 Swap Remaining";
+        }
+        else
+        {
+            _swapCounterLabel.text = $"{remainingSwaps} Swaps Remaining";
+        }
+    }
+
+    private void ShowSteamPopup(string text)
+    {
+        if (_steamPopupContainer == null || (_steamPopupImage == null && _steamPopupText == null)) return;
+
+        _steamPopupUsesText = !string.Equals(text, "STEAM\nMODE!", StringComparison.OrdinalIgnoreCase);
+        if (_steamPopupUsesText)
+        {
+            _steamPopupImage.gameObject.SetActive(false);
+            _steamPopupText.gameObject.SetActive(true);
+            _steamPopupText.text = text;
+            _steamPopupText.color = SteamPopupTextColor;
+        }
+        else
+        {
+            _steamPopupText.gameObject.SetActive(false);
+            _steamPopupImage.gameObject.SetActive(true);
+            _steamPopupImage.color = SteamPopupImageColor;
+        }
+
+        _steamPopupContainer.transform.localScale = Vector3.one;
+        _steamPopupContainer.SetActive(true);
+
+        if (_steamPopupCoroutine != null)
+        {
+            StopCoroutine(_steamPopupCoroutine);
+        }
+
+        _steamPopupCoroutine = StartCoroutine(AnimateSteamPopup());
+    }
+
+    private IEnumerator AnimateSteamPopup()
+    {
+        float elapsed = 0f;
+        while (elapsed < SteamPopupDuration)
+        {
+            float progress = Mathf.Clamp01(elapsed / SteamPopupDuration);
+            float bounceScale = Mathf.Lerp(1.5f, 1f, progress);
+            bounceScale += Mathf.Sin(progress * Mathf.PI) * 0.2f;
+            _steamPopupContainer.transform.localScale = Vector3.one * bounceScale;
+
+            Color baseColor = _steamPopupUsesText ? SteamPopupTextColor : SteamPopupImageColor;
+            Color color = Color.Lerp(baseColor, Color.white, progress);
+            color.a = Mathf.Lerp(1f, 0f, progress);
+            if (_steamPopupUsesText && _steamPopupText != null)
+            {
+                _steamPopupText.color = color;
+            }
+            else if (_steamPopupImage != null)
+            {
+                _steamPopupImage.color = color;
+            }
+
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        Color transparentColor = new Color(SteamPopupImageColor.r, SteamPopupImageColor.g, SteamPopupImageColor.b, 0f);
+        if (_steamPopupUsesText && _steamPopupText != null)
+        {
+            Color textTransparent = new Color(SteamPopupTextColor.r, SteamPopupTextColor.g, SteamPopupTextColor.b, 0f);
+            _steamPopupText.color = textTransparent;
+        }
+        else if (_steamPopupImage != null)
+        {
+            _steamPopupImage.color = transparentColor;
+        }
+        _steamPopupContainer.transform.localScale = Vector3.one;
+        _steamPopupContainer.SetActive(false);
+        _steamPopupCoroutine = null;
+    }
 
     private void CreateVictoryPanel()
     {
-        // ... (This function is UNCHANGED, it's an overlay so it's fine) ...
+        
         if (!useVictoryPanel || _hudCanvas == null || _victoryPanel != null) return;
 
         _victoryPanel = new GameObject("EndOfLevelPanel");
@@ -945,7 +1832,7 @@ public class GameManager : MonoBehaviour
         rect.anchorMin = new Vector2(0.5f, 0.5f);
         rect.anchorMax = new Vector2(0.5f, 0.5f);
         rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.sizeDelta = new Vector2(640f, 550f); // Increased height to accommodate larger font
+        rect.sizeDelta = new Vector2(900f, 650f); 
         rect.anchoredPosition = Vector2.zero;
 
         Image background = _victoryPanel.AddComponent<Image>();
@@ -956,13 +1843,13 @@ public class GameManager : MonoBehaviour
         RectTransform contentRect = content.AddComponent<RectTransform>();
         contentRect.anchorMin = Vector2.zero;
         contentRect.anchorMax = Vector2.one;
-        contentRect.offsetMin = new Vector2(48f, 32f); // Reduced top offset to bring title closer to top
+        contentRect.offsetMin = new Vector2(48f, 32f); 
         contentRect.offsetMax = new Vector2(-48f, -48f);
 
         _victoryContentLayout = content.AddComponent<VerticalLayoutGroup>();
         _victoryContentLayout.childAlignment = TextAnchor.UpperCenter;
-        _victoryContentLayout.spacing = 10f; // Reduced spacing to bring buttons closer to score text
-        _victoryContentLayout.padding = new RectOffset(0, 0, 5, 10); // Reduced top padding to bring title closer to top
+        _victoryContentLayout.spacing = 10f; 
+        _victoryContentLayout.padding = new RectOffset(0, 0, 5, 10); 
         _victoryContentLayout.childControlWidth = true;
         _victoryContentLayout.childForceExpandWidth = true;
         _victoryContentLayout.childControlHeight = false;
@@ -982,20 +1869,21 @@ public class GameManager : MonoBehaviour
         _victoryTitleLabel.fontSize = 56f;
         _victoryTitleLabel.fontStyle = FontStyles.Bold;
         _victoryTitleLabel.text = victoryTitleText;
+        ApplyEndPanelFont(_victoryTitleLabel);
 
-        // Create Trophy Image (between title and body/score text)
+        
         GameObject trophyContainer = new GameObject("TrophyContainer");
         trophyContainer.transform.SetParent(content.transform, false);
         RectTransform trophyContainerRect = trophyContainer.AddComponent<RectTransform>();
         trophyContainerRect.anchorMin = new Vector2(0f, 0.5f);
         trophyContainerRect.anchorMax = new Vector2(1f, 0.5f);
-        trophyContainerRect.sizeDelta = new Vector2(0f, trophyIconSize.y + 30f); // Add extra space below trophy
+        trophyContainerRect.sizeDelta = new Vector2(0f, trophyIconSize.y + 30f); 
         LayoutElement trophyContainerLayout = trophyContainer.AddComponent<LayoutElement>();
-        trophyContainerLayout.preferredHeight = trophyIconSize.y + 30f; // Extra space for spacing
+        trophyContainerLayout.preferredHeight = trophyIconSize.y + 30f; 
         trophyContainerLayout.flexibleWidth = 0f;
         trophyContainerLayout.flexibleHeight = 0f;
 
-        // Add horizontal layout to center the trophy
+        
         HorizontalLayoutGroup trophyContainerLayoutGroup = trophyContainer.AddComponent<HorizontalLayoutGroup>();
         trophyContainerLayoutGroup.childAlignment = TextAnchor.MiddleCenter;
         trophyContainerLayoutGroup.childControlWidth = false;
@@ -1014,7 +1902,7 @@ public class GameManager : MonoBehaviour
             _victoryTrophyImage.sprite = trophySprite;
         }
         _victoryTrophyImage.preserveAspect = true;
-        trophyContainer.SetActive(false); // Hidden by default, shown only on victory
+        trophyContainer.SetActive(false); 
 
         GameObject bodyGO = new GameObject("Body");
         bodyGO.transform.SetParent(content.transform, false);
@@ -1023,22 +1911,23 @@ public class GameManager : MonoBehaviour
         bodyRect.anchorMax = new Vector2(1f, 0.5f);
         bodyRect.sizeDelta = new Vector2(0f, 150f);
         LayoutElement bodyLayout = bodyGO.AddComponent<LayoutElement>();
-        bodyLayout.preferredHeight = 150f; // Increased to accommodate multiple lines for score display
+        bodyLayout.preferredHeight = 150f; 
 
         _victoryBodyLabel = bodyGO.AddComponent<TextMeshProUGUI>();
         _victoryBodyLabel.alignment = TextAlignmentOptions.Center;
         _victoryBodyLabel.fontSize = 40f;
         _victoryBodyLabel.enableWordWrapping = true;
         _victoryBodyLabel.text = victoryBodyText;
+        ApplyEndPanelFont(_victoryBodyLabel);
 
         GameObject summaryGroup = new GameObject("TokenSummary");
         summaryGroup.transform.SetParent(content.transform, false);
         RectTransform summaryRect = summaryGroup.AddComponent<RectTransform>();
         summaryRect.anchorMin = new Vector2(0f, 0.5f);
         summaryRect.anchorMax = new Vector2(1f, 0.5f);
-        summaryRect.sizeDelta = new Vector2(0f, 0f); // Reduced size since it's hidden
+        summaryRect.sizeDelta = new Vector2(0f, 0f); 
         LayoutElement summaryLayoutElement = summaryGroup.AddComponent<LayoutElement>();
-        summaryLayoutElement.preferredHeight = 0f; // Reduced height since summary is hidden
+        summaryLayoutElement.preferredHeight = 0f; 
 
         VerticalLayoutGroup summaryLayout = summaryGroup.AddComponent<VerticalLayoutGroup>();
         summaryLayout.childAlignment = TextAnchor.MiddleCenter;
@@ -1060,6 +1949,7 @@ public class GameManager : MonoBehaviour
         _fireVictoryLabel.alignment = TextAlignmentOptions.Center;
         _fireVictoryLabel.fontSize = 34f;
         _fireVictoryLabel.text = string.Empty;
+        ApplyEndPanelFont(_fireVictoryLabel);
 
         _waterSummaryRoot = new GameObject("WaterSummary");
         _waterSummaryRoot.transform.SetParent(summaryGroup.transform, false);
@@ -1073,15 +1963,16 @@ public class GameManager : MonoBehaviour
         _waterVictoryLabel.alignment = TextAlignmentOptions.Center;
         _waterVictoryLabel.fontSize = 34f;
         _waterVictoryLabel.text = string.Empty;
+        ApplyEndPanelFont(_waterVictoryLabel);
 
         GameObject buttonRow = new GameObject("Buttons");
         buttonRow.transform.SetParent(content.transform, false);
         RectTransform buttonRowRect = buttonRow.AddComponent<RectTransform>();
         buttonRowRect.anchorMin = new Vector2(0f, 0.5f);
         buttonRowRect.anchorMax = new Vector2(1f, 0.5f);
-        buttonRowRect.sizeDelta = new Vector2(0f, 70f); // Reduced height
+        buttonRowRect.sizeDelta = new Vector2(0f, 100f); 
         LayoutElement buttonRowLayout = buttonRow.AddComponent<LayoutElement>();
-        buttonRowLayout.preferredHeight = 75f; // Reduced height to fit better
+        buttonRowLayout.preferredHeight = 100f;
 
         HorizontalLayoutGroup layoutGroup = buttonRow.AddComponent<HorizontalLayoutGroup>();
         layoutGroup.childAlignment = TextAnchor.MiddleCenter;
@@ -1152,10 +2043,30 @@ public class GameManager : MonoBehaviour
 
         TextMeshProUGUI label = labelGO.AddComponent<TextMeshProUGUI>();
         label.alignment = TextAlignmentOptions.Center;
-        label.fontSize = 28f;
-        label.text = labelText;
+        label.fontSize = 32f; 
         label.color = Color.white;
-        label.raycastTarget = false;
+        label.text = labelText;
+        label.fontStyle = FontStyles.Bold;
+        ApplyEndPanelFont(label);
+
+        
+        if (themeButtonSprite != null)
+        {
+            bg.sprite = themeButtonSprite;
+            bg.type = Image.Type.Sliced;
+            bg.pixelsPerUnitMultiplier = 1f;
+        }
+        
+        
+        bg.color = Color.white; 
+
+        ColorBlock colors = button.colors;
+        colors.normalColor = themeButtonNormalColor;
+        colors.highlightedColor = themeButtonHighlightedColor;
+        colors.pressedColor = themeButtonPressedColor;
+        colors.selectedColor = themeButtonSelectedColor;
+        colors.colorMultiplier = 1f;
+        button.colors = colors;
 
         return button;
     }
@@ -1173,17 +2084,26 @@ public class GameManager : MonoBehaviour
 
     private void ShowEndPanel(EndGameState state)
     {
-        // ... (This function is UNCHANGED) ...
+        
         if (!useVictoryPanel || _victoryPanel == null) return;
 
         bool isVictory = state == EndGameState.Victory;
 
         if (_victoryTitleLabel != null)
         {
-            _victoryTitleLabel.text = isVictory ? victoryTitleText : defeatTitleText;
+            
+            if (isVictory && victorySlogans != null && victorySlogans.Length > 0)
+            {
+                _victoryTitleLabel.text = victorySlogans[UnityEngine.Random.Range(0, victorySlogans.Length)];
+            }
+            else
+            {
+                _victoryTitleLabel.text = isVictory ? victoryTitleText : defeatTitleText;
+            }
+            
         }
 
-        // Show/hide trophy based on victory state
+        
         if (_victoryTrophyImage != null)
         {
             GameObject trophyContainer = _victoryTrophyImage.transform.parent?.gameObject;
@@ -1195,7 +2115,7 @@ public class GameManager : MonoBehaviour
 
         if (_victoryBodyLabel != null)
         {
-            // Check if we're in a scored level and scoring is enabled
+            
             if (isVictory && enableScoring && IsScoredLevel())
             {
                 _victoryBodyLabel.text = BuildScoreDisplayText();
@@ -1208,13 +2128,13 @@ public class GameManager : MonoBehaviour
 
         if (_fireSummaryRoot != null)
         {
-            // Hide token count display for all levels
+            
             _fireSummaryRoot.SetActive(false);
         }
 
         if (_waterSummaryRoot != null)
         {
-            // Hide token count display for all levels
+            
             _waterSummaryRoot.SetActive(false);
         }
 
@@ -1243,9 +2163,8 @@ public class GameManager : MonoBehaviour
 
         bool canAdvance = isVictory && hasNextScene;
 
-        bool isFinalLevelVictory = isVictory &&
-                                   !string.IsNullOrEmpty(level3InstructionSceneName) &&
-                                   SceneManager.GetActiveScene().name == level3InstructionSceneName;
+        string activeSceneName = SceneManager.GetActiveScene().name;
+        bool isFinalLevelVictory = isVictory && IsFinalLevelScene(activeSceneName);
 
         if (_victoryNextLevelButton != null)
         {
@@ -1275,16 +2194,36 @@ public class GameManager : MonoBehaviour
 
     private void ResetHearts()
     {
-        // ... (This function is UNCHANGED) ...
         int clampedHearts = Mathf.Max(0, startingHearts);
-        _fireHearts = clampedHearts;
-        _waterHearts = clampedHearts;
+        int bonusHearts = ConsumePendingHeartBonusForCurrentScene();
+        int totalHearts = Mathf.Clamp(clampedHearts + bonusHearts, 0, startingHearts + MaxBonusHeartReward);
+        _fireHearts = totalHearts;
+        _waterHearts = totalHearts;
         UpdateHeartsUI();
+    }
+
+    private int ConsumePendingHeartBonusForCurrentScene()
+    {
+        if (s_pendingHeartBonusAmount <= 0 || string.IsNullOrEmpty(s_pendingHeartBonusScene))
+        {
+            return 0;
+        }
+
+        string activeScene = SceneManager.GetActiveScene().name;
+        if (!string.Equals(activeScene, s_pendingHeartBonusScene, StringComparison.OrdinalIgnoreCase))
+        {
+            return 0;
+        }
+
+        int bonus = Mathf.Clamp(s_pendingHeartBonusAmount, 0, MaxBonusHeartReward);
+        s_pendingHeartBonusAmount = 0;
+        s_pendingHeartBonusScene = null;
+        return bonus;
     }
 
     private void ResetTokenTracking()
     {
-        // ... (This function is UNCHANGED) ...
+        
         fireTokensCollected = 0;
         waterTokensCollected = 0;
         _totalFireTokens = 0;
@@ -1294,8 +2233,8 @@ public class GameManager : MonoBehaviour
 
     private void UpdateHeartsUI()
     {
-        // ... (This function is UNCHANGED) ...
-        // Loop through all of Ember's heart images
+        
+        
         for (int i = 0; i < _emberHeartImages.Count; i++)
         {
             var heartImage = _emberHeartImages[i];
@@ -1327,7 +2266,7 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        // Loop through all of Aqua's heart images
+        
         for (int i = 0; i < _aquaHeartImages.Count; i++)
         {
             var heartImage = _aquaHeartImages[i];
@@ -1381,23 +2320,23 @@ public class GameManager : MonoBehaviour
 
     private void UpdateTokensUI()
     {
-        // ... (This function is UNCHANGED) ...
-        // Loop through all of Ember's token images
+        
+        
         for (int i = 0; i < _emberTokenImages.Count; i++)
         {
             if (i < fireTokensCollected)
             {
-                // This index is less than the collected count, show "collected" sprite
+                
                 _emberTokenImages[i].sprite = fireTokenCollectedSprite;
             }
             else
             {
-                // This index is greater, show "empty" sprite
+                
                 _emberTokenImages[i].sprite = fireTokenEmptySprite;
             }
         }
 
-        // Loop through all of Aqua's token images
+        
         for (int i = 0; i < _aquaTokenImages.Count; i++)
         {
             if (i < waterTokensCollected)
@@ -1523,11 +2462,20 @@ public class GameManager : MonoBehaviour
         rect.localScale = baseScale * multiplier;
     }
 
-    // --- MODIFICATION START ---
-    // This function is modified to FIX the bug where token icons were not appearing.
-    // The line "AddComponent<LayoutElement>()" was accidentally removed in the previous
-    // version and has been RESTORED. This is required for the ContentSizeFitter.
-        private void RecountTokensInScene()
+    
+    
+    
+    
+    
+    
+    
+    
+    public void RecountTokensInScene()
+    {
+        RecountTokensInSceneInternal();
+    }
+    
+        private void RecountTokensInSceneInternal()
         {
             int fireCount = 0;
             int waterCount = 0;
@@ -1543,18 +2491,23 @@ public class GameManager : MonoBehaviour
             }
             else if (token.CompareTag("WaterToken"))
             {
-                // *** PLEASE CHECK THIS: ***
-                // Make sure your blue droplet prefabs/objects in the scene
-                // have their 'Tag' set to 'WaterToken' in the Inspector!
+                
+                
+                
                 waterCount++;
             }
         }
 
         _totalFireTokens = fireCount;
         _totalWaterTokens = waterCount;
+
+        if (disableTopUiBar)
+        {
+            return;
+        }
         
-        // 1. Find the master container, *then* the sub-containers
-        Transform searchRoot = _topUiBar != null ? _topUiBar : _hudCanvas.transform;
+        
+        Transform searchRoot = _topUiContentRoot != null ? _topUiContentRoot : (_topUiBar != null ? _topUiBar : _hudCanvas.transform);
         Transform tokensMasterContainer = searchRoot.Find("TokensMasterContainer");
         if (tokensMasterContainer == null)
         {
@@ -1562,10 +2515,12 @@ public class GameManager : MonoBehaviour
             return;
         }
         
-        Transform emberContainer = tokensMasterContainer.Find("EmberTokensContainer");
-        Transform aquaContainer = tokensMasterContainer.Find("AquaTokensContainer");
+        Transform emberContainer = tokensMasterContainer.Find("TokensContent/EmberTokensContainer") ??
+                                   tokensMasterContainer.Find("EmberTokensContainer");
+        Transform aquaContainer = tokensMasterContainer.Find("TokensContent/AquaTokensContainer") ??
+                                  tokensMasterContainer.Find("AquaTokensContainer");
 
-        // 2. Clear any old token images (in case of scene restart)
+        
         foreach (Image img in _emberTokenImages)
         {
             if (img != null)
@@ -1586,7 +2541,7 @@ public class GameManager : MonoBehaviour
         }
         _aquaTokenImages.Clear();
         
-        // 3. Create the "empty" token slots based on the level's total
+        
         if (emberContainer != null)
         {
             for (int i = 0; i < _totalFireTokens; i++)
@@ -1600,11 +2555,11 @@ public class GameManager : MonoBehaviour
                 tokenRect.sizeDelta = tokenIconSize; 
                 tokenRect.localScale = Vector3.one;
                 
-                // --- BUG FIX ---
-                // This line is CRITICAL and has been re-added.
-                // It tells the HorizontalLayoutGroup how wide the icon is.
+                
+                
+                
                 tokenImgGO.AddComponent<LayoutElement>().preferredWidth = tokenIconSize.x;
-                // --- END BUG FIX ---
+                
                 
                 _emberTokenImages.Add(tokenImg);
                 _tokenIconBaseScales[tokenImg] = tokenRect.localScale;
@@ -1624,10 +2579,10 @@ public class GameManager : MonoBehaviour
                 tokenRect.sizeDelta = tokenIconSize; 
                 tokenRect.localScale = Vector3.one;
 
-                // --- BUG FIX ---
-                // This line is CRITICAL and has been re-added.
+                
+                
                 tokenImgGO.AddComponent<LayoutElement>().preferredWidth = tokenIconSize.x;
-                // --- END BUG FIX ---
+                
                 
                 _aquaTokenImages.Add(tokenImg);
                 _tokenIconBaseScales[tokenImg] = tokenRect.localScale;
@@ -1637,15 +2592,20 @@ public class GameManager : MonoBehaviour
         UpdateTokensUI();
         SyncTokenTracker(resetLevelState: false);
     }
-    // --- MODIFICATION END ---
-
-    // ... (DamageBothPlayers, DamagePlayer, ApplyDamage, etc. are UNCHANGED) ...
-    // ... (Scroll down to the end) ...
     
+
+
     private void DamageBothPlayers(CoopPlayerController playerA, CoopPlayerController playerB)
     {
         if (!_gameActive || _gameFinished) return;
         if (playerA == null && playerB == null) return;
+
+        
+        if (IsPlayerInSteamMode(playerA) || IsPlayerInSteamMode(playerB))
+        {
+            Debug.Log("[GameManager] DamageBothPlayers: cancelled, steam mode active for at least one player.");
+            return;
+        }
 
         if (playerA != null)
         {
@@ -1660,11 +2620,22 @@ public class GameManager : MonoBehaviour
         CheckForHeartDepletion();
     }
 
+
+
     public void DamagePlayer(PlayerRole role, int amount, DamageCause cause = DamageCause.Unknown, Vector3? worldOverride = null)
     {
         if (amount <= 0 || !_gameActive || _gameFinished) return;
+
+        
+        if (IsRoleInSteamMode(role))
+        {
+            Debug.Log($"[GameManager] DamagePlayer blocked for {role} because of STEAM MODE. Cause={cause}");
+            return;
+        }
+
         ApplyDamage(role, amount, suppressCheck: false, cause: cause, worldOverride: worldOverride);
     }
+
 
     private void ApplyDamage(PlayerRole role, int amount, bool suppressCheck, DamageCause cause = DamageCause.Unknown, Vector3? worldOverride = null)
     {
@@ -1678,7 +2649,7 @@ public class GameManager : MonoBehaviour
                 _fireHearts = Mathf.Max(0, _fireHearts - amount);
                 TriggerHeartLossAnimations(true, previousFireHearts, previousFireHearts - _fireHearts);
                 break;
-            case PlayerRole.Watergirl: // This is the line I fixed for you before
+            case PlayerRole.Watergirl: 
                 _waterHearts = Mathf.Max(0, _waterHearts - amount);
                 TriggerHeartLossAnimations(false, previousWaterHearts, previousWaterHearts - _waterHearts);
                 break;
@@ -1687,21 +2658,10 @@ public class GameManager : MonoBehaviour
                  break;
         }
 
-        UpdateHeartsUI(); // This will now update the images
+        UpdateHeartsUI(); 
         TriggerHurtEffect(role);
 
-        // analytics: heart loss event
-        try
-        {
-            EnsureLevelTimer();
-            float elapsed = levelTimer != null ? levelTimer.ElapsedSeconds : 0f;
-            Analytics.GoogleSheetsAnalytics.SendHeartLoss(
-                null,
-                role == PlayerRole.Fireboy ? "fire" : "water",
-                cause.ToString(),
-                elapsed);
-        }
-        catch { }
+        SendAnalyticsForDamage(role, cause, worldOverride);
 
         if (!suppressCheck)
         {
@@ -1715,6 +2675,31 @@ public class GameManager : MonoBehaviour
         HandleOutOfHearts();
     }
 
+    private Vector3 ResolvePlayerWorldPosition(PlayerRole role)
+    {
+        for (int i = 0; i < _players.Count; i++)
+        {
+            var p = _players[i];
+            if (p != null && p.Role == role)
+            {
+                return p.transform.position;
+            }
+        }
+        
+        Vector3 sum = Vector3.zero;
+        int count = 0;
+        for (int i = 0; i < _players.Count; i++)
+        {
+            var p = _players[i];
+            if (p != null)
+            {
+                sum += p.transform.position;
+                count++;
+            }
+        }
+        return count > 0 ? sum / count : Vector3.zero;
+    }
+
         private void HandleOutOfHearts()
         {
             if (_gameFinished) return;
@@ -1725,8 +2710,10 @@ public class GameManager : MonoBehaviour
             levelTimer?.MarkFailure();
             FreezePlayers();
             CancelNextSceneLoad();
-            UpdateStatus(levelDefeatMessage);
+            UpdateStatus("");
             ShowEndPanel(EndGameState.Defeat);
+            SendAnalyticsForDamage(PlayerRole.Fireboy, DamageCause.Unknown, null); 
+            SendAnalyticsForDamage(PlayerRole.Watergirl, DamageCause.Unknown, null);
     }
 
     private void OnVictoryRestartClicked()
@@ -1768,22 +2755,92 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private void SendAnalyticsForDamage(PlayerRole role, DamageCause cause, Vector3? worldOverride)
+    {
+        try
+        {
+            EnsureLevelTimer();
+            float elapsed = levelTimer != null ? levelTimer.ElapsedSeconds : 0f;
+            Analytics.GoogleSheetsAnalytics.SendHeartLoss(
+                null,
+                role == PlayerRole.Fireboy ? "fire" : "water",
+                cause.ToString(),
+                elapsed);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Vector3 posForLog = worldOverride ?? ResolvePlayerWorldPosition(role);
+            Debug.Log($"[Analytics] Sending fail hotspot role={role} cause={cause} pos={posForLog} time={elapsed:0.0}s");
+#endif
+
+            Vector3 worldPos = worldOverride ?? ResolvePlayerWorldPosition(role);
+            int heartsRemaining = Mathf.Max(0, _fireHearts + _waterHearts);
+            Analytics.GoogleSheetsAnalytics.SendFailureHotspot(
+                SceneManager.GetActiveScene().name,
+                worldPos,
+                elapsed,
+                heartsRemaining,
+                fireTokensCollected,
+                waterTokensCollected,
+                cellSize: 1f,
+                victimRole: role.ToString(),
+                cause: cause.ToString());
+        }
+        catch { }
+    }
+
         private void HandleVictory()
         {
             if (_gameFinished) return;
 
             _gameFinished = true;
             _gameActive = false;
-            // analytics code
+            
             EnsureLevelTimer();
             (levelTimer ?? FindAnyObjectByType<Analytics.LevelTimer>())?.MarkSuccess();
-            UpdateStatus(levelVictoryMessage);
+            UpdateStatus("");
             FreezePlayers();
             CancelNextSceneLoad();
+            EvaluateBonusHeartReward();
             ShowEndPanel(EndGameState.Victory);
         }
 
-    // analytics code
+    private void EvaluateBonusHeartReward()
+    {
+        if (!enableScoring || !IsScoredLevel())
+        {
+            return;
+        }
+
+        if (!TryGetNextSceneName(out string nextScene) || string.IsNullOrEmpty(nextScene))
+        {
+            return;
+        }
+
+        string currentScene = SceneManager.GetActiveScene().name;
+        if (!s_levelScoreThresholds.TryGetValue(currentScene, out int requiredScore))
+        {
+            return;
+        }
+
+        LevelScoreResult score = CalculateCurrentLevelScore();
+        if (!score.HasScore)
+        {
+            return;
+        }
+
+        if (score.TotalScore > requiredScore)
+        {
+            s_pendingHeartBonusScene = nextScene;
+            s_pendingHeartBonusAmount = MaxBonusHeartReward;
+        }
+        else if (string.Equals(s_pendingHeartBonusScene, nextScene, StringComparison.OrdinalIgnoreCase))
+        {
+            s_pendingHeartBonusScene = null;
+            s_pendingHeartBonusAmount = 0;
+        }
+    }
+
+    
     
         private void EnsureLevelTimer()
         {
@@ -1796,7 +2853,7 @@ public class GameManager : MonoBehaviour
             if (existing != null)
             {
                 levelTimer = existing;
-                // Ensures abandon/quit attempts are captured
+                
                 levelTimer.autoSendFailureOnDestroy = true;
                 return;
             }
@@ -1874,6 +2931,27 @@ public class GameManager : MonoBehaviour
         int activeIndex = activeScene.buildIndex;
         int totalScenes = SceneManager.sceneCountInBuildSettings;
 
+        
+        if (!string.IsNullOrEmpty(level3InstructionSceneName) &&
+            !string.IsNullOrEmpty(level4InstructionSceneName) &&
+            activeScene.name == level3InstructionSceneName)
+        {
+            sceneName = level4InstructionSceneName;
+            return true;
+        }
+
+        if (string.Equals(activeScene.name, "Level3Scene", StringComparison.OrdinalIgnoreCase))
+        {
+            sceneName = !string.IsNullOrEmpty(level4InstructionSceneName) ? level4InstructionSceneName : "Level4Scene";
+            return true;
+        }
+
+        if (string.Equals(activeScene.name, "Level4Scene", StringComparison.OrdinalIgnoreCase))
+        {
+            sceneName = !string.IsNullOrEmpty(level5InstructionSceneName) ? level5InstructionSceneName : "Level5Scene";
+            return true;
+        }
+
         if (activeIndex >= 0 && totalScenes > 0)
         {
             for (int index = activeIndex + 1; index < totalScenes; index++)
@@ -1916,6 +2994,17 @@ public class GameManager : MonoBehaviour
         if (_victoryMainMenuButton != null)
         {
             _victoryMainMenuButton.onClick.RemoveListener(OnVictoryMainMenuClicked);
+        }
+
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+
+        if (_steamPopupCoroutine != null)
+        {
+            StopCoroutine(_steamPopupCoroutine);
+            _steamPopupCoroutine = null;
         }
     }
 
@@ -1962,21 +3051,29 @@ public class GameManager : MonoBehaviour
         return text.Replace("Fireboy", "Ember").Replace("Watergirl", "Aqua");
     }
 
+    private bool IsFinalLevelScene(string sceneName)
+    {
+        return !string.IsNullOrEmpty(level5InstructionSceneName) &&
+               sceneName == level5InstructionSceneName;
+    }
+
     private bool IsScoredLevel()
     {
         string currentScene = SceneManager.GetActiveScene().name;
-        // Check if we're in any of the main level scenes (Level1, Level2, or Level3)
-        // Tutorial uses GameManagerTutorial, so it's automatically excluded
+        
+        
         return (!string.IsNullOrEmpty(instructionPanelSceneName) && currentScene == instructionPanelSceneName) ||
                (!string.IsNullOrEmpty(level2InstructionSceneName) && currentScene == level2InstructionSceneName) ||
-               (!string.IsNullOrEmpty(level3InstructionSceneName) && currentScene == level3InstructionSceneName);
+               (!string.IsNullOrEmpty(level3InstructionSceneName) && currentScene == level3InstructionSceneName) ||
+               (!string.IsNullOrEmpty(level4InstructionSceneName) && currentScene == level4InstructionSceneName) ||
+               (!string.IsNullOrEmpty(level5InstructionSceneName) && currentScene == level5InstructionSceneName);
     }
 
     private float GetTargetTimeForCurrentLevel()
     {
         string currentScene = SceneManager.GetActiveScene().name;
         
-        // Check for level-specific target times
+        
         if (!string.IsNullOrEmpty(level2InstructionSceneName) && currentScene == level2InstructionSceneName)
         {
             return level2TargetTimeSeconds > 0f ? level2TargetTimeSeconds : targetTimeSeconds;
@@ -1986,42 +3083,80 @@ public class GameManager : MonoBehaviour
         {
             return level3TargetTimeSeconds > 0f ? level3TargetTimeSeconds : targetTimeSeconds;
         }
+
+        if (!string.IsNullOrEmpty(level4InstructionSceneName) && currentScene == level4InstructionSceneName)
+        {
+            return level4TargetTimeSeconds > 0f ? level4TargetTimeSeconds : targetTimeSeconds;
+        }
+
+        if (!string.IsNullOrEmpty(level5InstructionSceneName) && currentScene == level5InstructionSceneName)
+        {
+            return level5TargetTimeSeconds > 0f ? level5TargetTimeSeconds : targetTimeSeconds;
+        }
         
-        // Default to Level 1 target time (or general target time)
+        
         return targetTimeSeconds;
     }
 
-    private string BuildScoreDisplayText()
+    private struct LevelScoreResult
     {
-        // Use the scoring timer (actual gameplay time) instead of analytics timer
-        float elapsedSecondsRaw = _scoringTimerStarted 
-            ? Mathf.Max(0f, Time.realtimeSinceStartup - _scoringStartTime) 
+        public bool HasScore;
+        public float ElapsedSeconds;
+        public float TargetTimeSeconds;
+        public int TotalTokensCollected;
+        public int TotalTokensAvailable;
+        public int TokenBonus;
+        public int TimeBonus;
+        public int TotalScore;
+    }
+
+    private LevelScoreResult CalculateCurrentLevelScore()
+    {
+        if (!enableScoring || !IsScoredLevel())
+        {
+            return default;
+        }
+
+        float elapsedSecondsRaw = _scoringTimerStarted
+            ? Mathf.Max(0f, Time.realtimeSinceStartup - _scoringStartTime)
             : 0f;
-        // Round to whole seconds to match the display format (MM:SS)
         float elapsedSeconds = Mathf.Floor(elapsedSecondsRaw);
         float levelTargetTime = GetTargetTimeForCurrentLevel();
-        
-        // Calculate score components
+
         int totalTokens = fireTokensCollected + waterTokensCollected;
         int tokenBonus = totalTokens * pointsPerToken;
         float timeBonus = Mathf.Max(0f, (levelTargetTime - elapsedSeconds) * timeBonusMultiplier);
         int timeBonusInt = Mathf.RoundToInt(timeBonus);
         int totalScore = basePoints + tokenBonus + timeBonusInt;
-        
-        // Format time as MM:SS
-        string timeFormatted = FormatTime(elapsedSeconds);
-        string timeBonusFormatted = FormatNumber(timeBonusInt);
-        
-        // Format token display (X/Y)
-        int totalTokensInLevel = _totalFireTokens + _totalWaterTokens;
-        string tokenBonusFormatted = FormatNumber(tokenBonus);
-        
-        // Format total score
-        string totalScoreFormatted = FormatNumber(totalScore);
-        
-        // Build the display text
+
+        return new LevelScoreResult
+        {
+            HasScore = true,
+            ElapsedSeconds = elapsedSeconds,
+            TargetTimeSeconds = levelTargetTime,
+            TotalTokensCollected = totalTokens,
+            TotalTokensAvailable = _totalFireTokens + _totalWaterTokens,
+            TokenBonus = tokenBonus,
+            TimeBonus = timeBonusInt,
+            TotalScore = totalScore
+        };
+    }
+
+    private string BuildScoreDisplayText()
+    {
+        LevelScoreResult score = CalculateCurrentLevelScore();
+        if (!score.HasScore)
+        {
+            return victoryBodyText;
+        }
+
+        string timeFormatted = FormatTime(score.ElapsedSeconds);
+        string timeBonusFormatted = FormatNumber(score.TimeBonus);
+        string tokenBonusFormatted = FormatNumber(score.TokenBonus);
+        string totalScoreFormatted = FormatNumber(score.TotalScore);
+
         return $"Time: {timeFormatted} (Bonus +{timeBonusFormatted})\n" +
-               $"Tokens: {totalTokens}/{totalTokensInLevel} (+{tokenBonusFormatted})\n" +
+               $"Tokens: {score.TotalTokensCollected}/{score.TotalTokensAvailable} (+{tokenBonusFormatted})\n" +
                $"Total Score: {totalScoreFormatted} points";
     }
 
