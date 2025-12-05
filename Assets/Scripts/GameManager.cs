@@ -103,7 +103,7 @@ public class GameManager : MonoBehaviour
         "Caution: Touch each other? lose a heart.",
         "Caution: Touch wrong obstacle? lose a heart.",
         "Work together but never collide!",
-        "Score 2100+ to snag bonus hearts next level."
+        "Score 2100+ to get bonus hearts in the next level."
     };
     [SerializeField] private string instructionContinuePrompt = "Press Space to start";
     [SerializeField] private string level2InstructionSceneName = "Level2Scene";
@@ -112,7 +112,7 @@ public class GameManager : MonoBehaviour
         "",
         "",
         "Tip: Opposites protect. Shield your partner from danger.",
-        "Hit 1300+ and we'll drop bonus hearts for you."
+        "Score 1300+ to get bonus hearts in the next level."
     };
     [SerializeField] private string level2InstructionContinuePrompt = "Press Space to start";
     [SerializeField] private string level3InstructionSceneName = "Level3Scene";
@@ -124,7 +124,7 @@ public class GameManager : MonoBehaviour
         "Destroying one obstacle can lead to the creation of a new one",
         "",
         "Keep collecting tokens and avoid hazards!",
-        "Pull 1200+ and enjoy extra hearts on the next round."
+        "Score 1200+ to get bonus hearts in the next level."
     };
     [SerializeField] private string level3InstructionContinuePrompt = "Press Space to start";
     [SerializeField] private string level4InstructionSceneName = "Level4Scene";
@@ -135,7 +135,7 @@ public class GameManager : MonoBehaviour
         "Beware of the green wisp!",
         "Touch the purple spiral together to activate Steam Mode.",
         "Act fast—Steam Mode is timed!",
-        "Beat 1800+ and boom, bonus hearts unlocked."
+        "Score 1800+ to get bonus hearts in the next level."
     };
     [SerializeField] private string level4InstructionContinuePrompt = "Press Space to start";
     [SerializeField] private string level5InstructionSceneName = "Level5Scene";
